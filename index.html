@@ -1,0 +1,2276 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Brush &amp; Ink</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#E7E6E2;
+  --ink:#1C1B19;
+  --ink-2:#56544F;
+  --ink-3:#8B8882;
+  --line:rgba(28,27,25,.24);
+  --line-2:rgba(28,27,25,.12);
+  --panel:rgba(236,235,231,.86);
+  --seal:#B0301F;
+  --ok:#3E7A55;
+  --serif:"Instrument Serif","Iowan Old Style","Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --gut:32px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--ground);color:var(--ink)}
+body{font:13px/1.5 var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased;touch-action:manipulation;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+#stage{position:fixed;inset:0;background:var(--ground)}
+#view{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;outline:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#stage{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+
+.tl{position:fixed;top:var(--gut);left:var(--gut);max-width:330px;z-index:2;pointer-events:none}
+.eyebrow{font:500 10.5px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);display:flex;gap:14px}
+.eyebrow span+span{color:var(--ink-3)}
+h1{font:italic 400 60px/.88 var(--serif);letter-spacing:-.01em;margin:16px 0 16px;text-wrap:balance}
+.cap{margin:0;color:var(--ink-2);font-size:12.5px;line-height:1.7}
+
+.rcol{position:fixed;top:var(--gut);right:var(--gut);bottom:var(--gut);width:280px;display:flex;flex-direction:column;gap:10px;z-index:3;pointer-events:none}
+.rcol>*{pointer-events:auto}
+.box{border:1px solid var(--line);background:var(--panel)}
+.rec{padding:12px 14px 14px;display:grid;gap:10px;flex:none}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chip{font:500 10.5px/1 var(--mono);letter-spacing:.14em;display:inline-flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:block}
+.chip.rec i{background:var(--seal);animation:blink 1s steps(2,start) infinite}
+.chip.warn i{background:#B7872B}
+.chip.off i{background:var(--ink-3)}
+@keyframes blink{50%{opacity:.15}}
+.panel{padding:14px;overflow:auto;min-height:0;flex:0 1 auto;display:grid;gap:16px;align-content:start}
+.lab{font:500 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.grp{display:grid;gap:9px}
+.field{display:grid;gap:3px}
+.ftop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ftop label{font-size:12.5px}
+.val{font:12px/1 var(--mono);color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;margin:0;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:1px;background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:15px;background:var(--ink);margin-top:-7px;border:0;border-radius:0}
+input[type=range]::-moz-range-track{height:1px;background:var(--ink)}
+input[type=range]::-moz-range-thumb{width:9px;height:15px;background:var(--ink);border:0;border-radius:0}
+.btn{background:transparent;border:1px solid var(--line);padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;text-align:left;font-size:12.5px;line-height:1.2;min-height:34px}
+.btn:hover{border-color:var(--ink)}
+.btn kbd{font:11px/1 var(--mono);color:var(--ink-3)}
+.btn.on{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.btn.on kbd{color:rgba(231,230,226,.6)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.solid{background:var(--ink);color:var(--ground);border-color:var(--ink);justify-content:center}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line)}
+.seg button{background:transparent;border:0;border-left:1px solid var(--line-2);padding:7px 0;font:12px/1 var(--mono);cursor:pointer}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--ground)}
+.check{display:flex;gap:9px;align-items:center;font-size:12.5px;cursor:pointer;user-select:none}
+.check input{appearance:none;-webkit-appearance:none;width:12px;height:12px;border:1px solid var(--ink);margin:0;flex:none;cursor:pointer}
+.check input:checked{background:var(--ink);box-shadow:inset 0 0 0 2px var(--ground)}
+.presets{display:grid;gap:4px}
+.preset{display:flex;align-items:center;gap:10px;background:transparent;border:1px solid transparent;padding:6px 8px;cursor:pointer;text-align:left;font-size:12.5px}
+.preset:hover{border-color:var(--line)}
+.preset[aria-pressed=true]{border-color:var(--ink)}
+.sw{display:flex;flex:none}
+.sw b{width:14px;height:14px;display:block;border:1px solid var(--line-2)}
+.sw b+b{margin-left:-4px}
+.preset small{margin-left:auto;font:10.5px/1 var(--mono);color:var(--ink-3);letter-spacing:.06em}
+
+details.inside{flex:none;padding:0}
+details.inside summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;font:italic 19px/1 var(--serif)}
+details.inside summary::-webkit-details-marker{display:none}
+details.inside summary span{font:11px/1 var(--mono);color:var(--ink-3)}
+details.inside[open] summary span{transform:rotate(45deg)}
+.inside-body{padding:0 14px 14px;max-height:38vh;overflow:auto;font-size:12px;line-height:1.65;color:var(--ink-2);display:grid;gap:8px}
+.inside-body p{margin:0}
+.inside-body b{color:var(--ink);font-weight:500}
+.spacer{flex:1 1 0;min-height:0}
+
+.bl{position:fixed;left:var(--gut);bottom:var(--gut);z-index:2;display:grid;gap:12px;max-width:min(600px,calc(100vw - 390px))}
+.guide{margin:0;font-size:12px;line-height:1.7;color:var(--ink-2)}
+.guide kbd{font:11px/1 var(--mono);border:1px solid var(--line);padding:1px 4px;color:var(--ink)}
+.stats{display:flex;flex-wrap:wrap;gap:6px 26px;border-top:1px solid var(--line);padding-top:10px}
+.stat{display:grid;gap:2px;min-width:64px}
+.stat b{font:500 19px/1.1 var(--mono);font-variant-numeric:tabular-nums;font-weight:500}
+.stat b small{font-size:11px;color:var(--ink-3);margin-left:2px}
+.stat span{font-size:11px;color:var(--ink-3)}
+.note{margin:0;font-size:11px;color:var(--ink-3)}
+
+.wideBar{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:16px;z-index:4;display:none;gap:8px}
+.wideBar .btn{background:var(--panel)}
+body.wide .tl,body.wide .rcol,body.wide .bl{display:none}
+body.wide .wideBar{display:flex}
+
+#nogpu{position:fixed;inset:0;display:grid;place-items:center;padding:24px;z-index:10;background:var(--ground)}
+#nogpu .card{max-width:520px;border:1px solid var(--line);padding:28px;display:grid;gap:12px;background:var(--ground)}
+#nogpu h2{font:italic 400 36px/1 var(--serif);margin:0}
+#nogpu p{margin:0;line-height:1.7;color:var(--ink-2)}
+#nogpu code{font:12px var(--mono);color:var(--ink);word-break:break-word}
+
+.modal{position:fixed;inset:0;z-index:20;background:rgba(28,27,25,.42);display:grid;place-items:center;padding:24px}
+.sheet{background:var(--ground);border:1px solid var(--ink);max-width:min(1100px,100%);max-height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:100%}
+.mhead,.mfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px}
+.mhead{border-bottom:1px solid var(--line)}
+.mfoot{border-top:1px solid var(--line)}
+.mhead strong{font:italic 400 24px/1 var(--serif)}
+#mbody{display:grid;place-items:center;padding:16px;min-height:0;overflow:auto;background:#DAD9D4}
+#mbody img,#mbody video{max-width:100%;max-height:68vh;display:block}
+#minfo{font:11.5px/1.4 var(--mono);color:var(--ink-2)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--ground);padding:9px 14px;font-size:12.5px;pointer-events:none;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+
+@media (max-width:820px), (orientation:portrait) and (max-width:1100px){
+  :root{--gut:16px}
+  body{overflow:auto;display:flex;flex-direction:column;gap:14px;padding:16px 16px 28px;height:auto;min-height:100%}
+  .tl{position:static;max-width:none;order:1}
+  h1{font-size:46px;margin:10px 0}
+  .rcol{position:static;display:contents}
+  .rec{order:2;padding:10px 12px;gap:8px}
+  .rec .btn{min-height:32px;padding:6px 9px}
+  .rec .btn kbd,.btn kbd{display:none}
+  #bLapse kbd{display:none}
+  #stage{position:relative;order:3;height:min(74svh,150vw);margin-inline:-16px;inset:auto}
+  .panel{order:4;overflow:visible}
+  .bl{position:static;order:5;max-width:none}
+  details.inside{order:6}
+  .spacer{display:none}
+  .inside-body{max-height:none}
+  body.wide{overflow:hidden}
+  body.wide #stage{position:fixed;inset:0;height:auto;margin:0;z-index:6}
+  body.wide .wideBar{z-index:7}
+}
+select{font:12.5px var(--sans);color:var(--ink);background:transparent;border:1px solid var(--line);padding:6px 8px;border-radius:0}
+.field-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12.5px}
+/* touch: every control at least 44 pt */
+@media (pointer:coarse){
+  .btn,.rec .btn,.preset,select{min-height:44px}
+  .seg button{min-height:44px}
+  .check{min-height:44px}
+  .check input{width:20px;height:20px}
+  input[type=range]{height:44px}
+  input[type=range]::-webkit-slider-thumb{width:22px;height:28px;margin-top:-14px}
+  input[type=range]::-moz-range-thumb{width:22px;height:28px}
+  details.inside summary{min-height:44px}
+  .guide .keys,.btn kbd{display:none}
+}
+.touchonly{display:none}
+@media (pointer:coarse){.touchonly{display:inline}}
+@media (prefers-reduced-motion:reduce){.chip.rec i{animation:none}.toast{transition:none}}
+</style>
+</head>
+<body>
+
+<header class="tl">
+  <div class="eyebrow"><span>Material Studies</span><span>No. 010</span></div>
+  <h1>Brush<br>&amp; Ink.</h1>
+  <p class="cap">붓털 72가닥을 1/240초마다 계산합니다.<br>0.3 mm 격자의 한지 위로 물과 먹이 번집니다.<br>천천히 누르면 굵어지고, 움직이며 떼면 끝이 빠집니다.</p>
+</header>
+
+<div class="rcol">
+  <section class="rec box" aria-label="상태와 녹화">
+    <div class="row">
+      <span class="chip" id="status"><i></i><span id="statusText">WEBGPU · 준비 중</span></span>
+      <button class="btn" id="bWide" type="button" title="패널을 숨기고 종이를 화면 가득">넓게 보기 <kbd>F</kbd></button>
+    </div>
+    <div class="g2">
+      <button class="btn" id="bRec" type="button">화면 녹화 <kbd>R</kbd></button>
+      <button class="btn" id="bReplay" type="button">다시 쓰기</button>
+    </div>
+    <div class="seg" role="group" aria-label="다시 쓰기 속도" id="speedSeg">
+      <button type="button" data-s="1" aria-pressed="false">1×</button>
+      <button type="button" data-s="2" aria-pressed="false">2×</button>
+      <button type="button" data-s="4" aria-pressed="true">4×</button>
+      <button type="button" data-s="8" aria-pressed="false">8×</button>
+    </div>
+    <label class="check"><input type="checkbox" id="cSkip" checked> 붓을 든 시간 건너뛰기</label>
+    <button class="btn" id="bLapse" type="button">타임랩스 영상 <kbd>8× · 녹화</kbd></button>
+  </section>
+
+  <aside class="panel box" aria-label="붓과 재료">
+    <div class="grp">
+      <div class="lab">Material</div>
+      <div class="presets" id="presets"></div>
+    </div>
+    <div class="grp">
+      <div class="lab">Brush</div>
+      <div class="field"><div class="ftop"><label for="sSize">붓 크기</label><span class="val" id="vSize"></span></div><input type="range" id="sSize" min="0.6" max="1.5" step="0.01" value="1"></div>
+      <div class="field"><div class="ftop"><label for="sPress">필압</label><span class="val" id="vPress"></span></div><input type="range" id="sPress" min="0.08" max="1" step="0.01" value="0.5"></div>
+      <div class="field"><div class="ftop"><label for="sConc">먹 농도</label><span class="val" id="vConc"></span></div><input type="range" id="sConc" min="0" max="1" step="0.01" value="0.72"></div>
+      <div class="field"><div class="ftop"><label for="sBleed">번짐</label><span class="val" id="vBleed"></span></div><input type="range" id="sBleed" min="0" max="1" step="0.01" value="0.42"></div>
+      <div class="field"><div class="ftop"><label for="sElastic">붓털 탄력</label><span class="val" id="vElastic"></span></div><input type="range" id="sElastic" min="0" max="1" step="0.01" value="0.55"></div>
+    </div>
+    <div class="g2">
+      <button class="btn" id="bDip" type="button">먹 찍기 <kbd>D</kbd></button>
+      <button class="btn" id="bNew" type="button">새 종이 <kbd>N</kbd></button>
+      <button class="btn" id="bPause" type="button">일시정지 <kbd>P</kbd></button>
+      <button class="btn" id="bPeel" type="button">종이 떼어 보기 <kbd>E</kbd></button>
+    </div>
+    <div class="grp">
+      <label class="check"><input type="checkbox" id="cSlow"> ¼ 속도</label>
+      <label class="check"><input type="checkbox" id="cGrid"> 미자격(米字格) 격자</label>
+      <label class="check"><input type="checkbox" id="cSkel"> 붓털 골격 보기</label>
+    </div>
+    <div class="grp">
+      <div class="lab">Input · Display</div>
+      <label class="check"><input type="checkbox" id="cFinger" checked> 손가락으로 쓰기 (끄면 Apple Pencil만)</label>
+      <div class="field-row"><label for="selRes">렌더 해상도</label>
+        <select id="selRes"><option value="auto" selected>자동</option><option value="high">높게</option><option value="mid">보통</option><option value="low">낮게</option></select></div>
+    </div>
+  </aside>
+
+  <div class="spacer"></div>
+
+  <details class="inside box" id="inside">
+    <summary>Inside the experiment <span>+</span></summary>
+    <div class="inside-body">
+      <p><b>붓.</b> 붓털 72가닥을 각각 입자 10개짜리 사슬로 만들고, 1/240초 고정 간격의 위치 기반 동역학(PBD)으로 풉니다. 가닥마다 길이 제약, 원래 모양으로 돌아가려는 탄성, 먹을 머금은 털끼리 모이는 응집을 겁니다. 종이에 닿은 입자는 마찰로 끌리고, 누른 깊이만큼 바깥으로 퍼집니다.</p>
+      <p><b>먹 흐름.</b> 털마다 먹 양이 따로 있고 붓 배의 저장량에서 조금씩 다시 채워집니다. 채워지는 속도가 털마다 달라서 먹이 줄면 바깥 털부터 마르고, 마른 털은 종이 섬유의 높은 곳에만 먹을 남겨 갈필이 됩니다.</p>
+      <p><b>종이.</b> 64×36 cm를 2134×1200칸(한 칸 약 0.3 mm)으로 나누고, 칸마다 물·떠 있는 안료·섬유에 걸린 안료·종이 습기를 WebGPU 컴퓨트 셰이더가 1/120초마다 갱신합니다. 물은 높이 차가 표면장력 문턱을 넘을 때만 이웃으로 흐르고 섬유 방향으로 더 잘 흐릅니다. 안료는 물이 흡수되거나 마를 때 섬유에 걸리고, 번진 가장자리는 더 빨리 말라 짙어집니다.</p>
+      <p><b>기록.</b> 새 종이를 편 뒤의 붓 입력을 물리 스텝마다 저장합니다. 다시 쓰기는 영상을 되감는 것이 아니라, 같은 입력을 같은 엔진에 넣어 빈 종이부터 다시 계산합니다.</p>
+      <p><b>렌더링.</b> 먹 농도는 지수 감쇠로 종이 색을 덮고, 젖은 면은 조명 반사를 받습니다. 붓과 문진의 그림자는 거리장(SDF) 소프트 섀도로 계산합니다.</p>
+    </div>
+  </details>
+</div>
+
+<div id="stage"><canvas id="view" tabindex="0" aria-label="붓글씨 시뮬레이션 화면. 드래그해서 붓으로 씁니다."></canvas></div>
+
+<section class="bl" aria-label="사용 안내와 실시간 수치">
+  <p class="guide">종이 위를 드래그해서 씁니다. 펜은 필압을 그대로 읽습니다.<br>천천히 머무르면 굵어지고, 움직이면서 떼면 끝이 뾰족하게 빠집니다.<span class="keys"><br><kbd>D</kbd> 먹 찍기 · <kbd>N</kbd> 새 종이 · <kbd>P</kbd> 일시정지 · <kbd>R</kbd> 녹화 · <kbd>F</kbd> 넓게 보기 · <kbd>E</kbd> 종이 떼어 보기</span><span class="touchonly"><br>Apple Pencil을 기울이면 붓대도 같이 기웁니다.</span></p>
+  <div class="stats">
+    <div class="stat"><b id="stInk">–</b><span>먹 잔량</span></div>
+    <div class="stat"><b id="stPress">–</b><span>필압</span></div>
+    <div class="stat"><b id="stSpeed">–</b><span>붓끝 속도</span></div>
+    <div class="stat"><b id="stTouch">–</b><span>닿은 붓털</span></div>
+    <div class="stat"><b id="stStrokes">–</b><span>획 수</span></div>
+  </div>
+  <p class="note">모두 시뮬레이션 안에서 계산한 값이며 실제 측정값이 아닙니다.</p>
+</section>
+
+<div class="wideBar"><button class="btn" id="wideDip" type="button">먹 찍기 <kbd>D</kbd></button><button class="btn" id="exitWide" type="button">넓게 보기 끄기 <kbd>F</kbd></button></div>
+
+<div id="nogpu" hidden>
+  <div class="card">
+    <div class="eyebrow"><span>Material Studies</span><span>No. 010</span></div>
+    <h2>WebGPU를 쓸 수 없습니다</h2>
+    <p id="nogpuReason"></p>
+    <p>이 실험은 붓털 물리와 종이 격자를 실제로 계산해야 해서, 대신 보여 줄 정지 화면을 두지 않았습니다. Chrome이나 Edge 113 이상, Safari 26 이상에서 열어 주세요. 하드웨어 가속이 꺼져 있으면 브라우저 설정에서 켜야 합니다.</p>
+  </div>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mtitle">
+    <div class="mhead"><strong id="mtitle"></strong><button class="btn" id="mclose" type="button">닫기 <kbd>Esc</kbd></button></div>
+    <div id="mbody"></div>
+    <div class="mfoot"><span id="minfo"></span><button class="btn solid" id="msave" type="button">저장</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+"use strict";
+const $ = s => document.querySelector(s);
+
+// ------------------------------------------------------------------ constants
+const NB = 72, NP = 10, NPT = NB * NP;
+const PHYS_HZ = 240, DT = 1 / PHYS_HZ, STEPS_PER_TICK = 4;
+const SIM_W = 2134, SIM_H = 1200;           // 64 x 36 cm, ~0.3 mm cells
+const EXP_W = 3200, EXP_H = 1800;
+const CAP_MAX = 65536, CAP_F = 12;
+const RAD = 0.012;                          // bristle particle radius (cm)
+const WEIGHT = { cx: 0, cy: 0.95, cz: -15.8, hx: 21, hy: 0.95, hz: 1.4 };
+const MSAA = 4;
+
+const PRESETS = [
+  { name: '송연먹 · 한지', tag: 'SONGYEON', paper: [0.925, 0.906, 0.858], inkLight: [0.47, 0.50, 0.55], inkDark: [0.030, 0.030, 0.036], k: 2.5, metal: 0, absorb: 1.0, flow: 1.0, grid: [0.76, 0.27, 0.20, 0.55], felt: [0.36, 0.355, 0.35] },
+  { name: '주묵 · 선지', tag: 'JUMUK', paper: [0.956, 0.947, 0.920], inkLight: [0.97, 0.50, 0.34], inkDark: [0.64, 0.085, 0.045], k: 2.2, metal: 0, absorb: 0.85, flow: 1.45, grid: [0.35, 0.42, 0.55, 0.45], felt: [0.36, 0.355, 0.35] },
+  { name: '금니 · 감지', tag: 'GEUMNI', paper: [0.080, 0.105, 0.245], inkLight: [0.52, 0.45, 0.27], inkDark: [0.94, 0.77, 0.42], k: 2.3, metal: 1, absorb: 0.6, flow: 0.75, grid: [0.78, 0.64, 0.36, 0.40], felt: [0.40, 0.395, 0.39] },
+];
+
+const P = { size: 1.0, press: 0.5, conc: 0.72, bleed: 0.42, elastic: 0.55, preset: 0 };
+const ui = { slow: false, grid: false, skel: false, wide: false, speed: 4, skip: true, finger: true, res: 'auto' };
+const isAppleTouch = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// ------------------------------------------------------------------ WGSL
+const WGSL_COMMON = /* wgsl */`
+const SW: i32 = ${SIM_W};
+const SH: i32 = ${SIM_H};
+fn pcg(v: u32) -> u32 {
+  let s = v * 747796405u + 2891336453u;
+  let w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u;
+  return (w >> 22u) ^ w;
+}
+fn rnd2(p: vec2i, seed: u32) -> f32 {
+  let h = pcg(bitcast<u32>(p.x) * 1973u + pcg(bitcast<u32>(p.y) * 9277u + seed));
+  return f32(h) * (1.0 / 4294967295.0);
+}
+fn vnoise(p: vec2f, seed: u32) -> f32 {
+  let i = vec2i(floor(p));
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = rnd2(i, seed);
+  let b = rnd2(i + vec2i(1, 0), seed);
+  let c = rnd2(i + vec2i(0, 1), seed);
+  let d = rnd2(i + vec2i(1, 1), seed);
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+fn fbm(p: vec2f, seed: u32) -> f32 {
+  var s = 0.0; var a = 0.5; var q = p;
+  for (var k = 0u; k < 5u; k++) {
+    s += a * vnoise(q, seed + k * 101u);
+    q = q * 2.03 + vec2f(17.1, 9.3);
+    a *= 0.5;
+  }
+  return s / 0.96875;
+}
+`;
+
+const WGSL_GEN = WGSL_COMMON + /* wgsl */`
+@group(0) @binding(0) var o1: texture_storage_2d<rgba16float, write>;
+@group(0) @binding(1) var o2: texture_storage_2d<rgba16float, write>;
+@group(0) @binding(2) var<uniform> G: vec4u;
+
+fn fiberLayer(pos: vec2f, cs: f32, seed: u32, dom: f32, lenA: f32, lenB: f32, widA: f32, widB: f32, spread: f32, bestIn: vec3f) -> vec3f {
+  var best = bestIn;
+  let ci = vec2i(floor(pos / cs));
+  for (var dy = -2; dy <= 2; dy++) {
+    for (var dx = -2; dx <= 2; dx++) {
+      let c = ci + vec2i(dx, dy);
+      for (var k = 0u; k < 2u; k++) {
+        let s2 = seed + k * 977u;
+        let ctr = (vec2f(c) + vec2f(rnd2(c, s2 + 1u), rnd2(c, s2 + 2u))) * cs;
+        let ang = dom + (rnd2(c, s2 + 3u) - 0.5) * spread;
+        let len = mix(lenA, lenB, rnd2(c, s2 + 4u));
+        let wid = mix(widA, widB, rnd2(c, s2 + 5u));
+        let bend = (rnd2(c, s2 + 6u) - 0.5) * 0.4;
+        let dir = vec2f(cos(ang), sin(ang));
+        let q = pos - ctr;
+        let along = dot(q, dir);
+        let tt = clamp(along / len, -1.0, 1.0);
+        let across = dot(q, vec2f(-dir.y, dir.x)) - bend * (1.0 - tt * tt) * len;
+        let da = max(abs(along) - len, 0.0);
+        let dist = sqrt(da * da + across * across);
+        let wv = wid * (1.0 - 0.55 * tt * tt);
+        let v = (1.0 - smoothstep(wv * 0.35, wv, dist)) * mix(0.5, 1.0, rnd2(c, s2 + 7u));
+        if (v > best.x) { best = vec3f(v, dir); }
+      }
+    }
+  }
+  return best;
+}
+
+@compute @workgroup_size(16, 16)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (id.x >= u32(SW) || id.y >= u32(SH)) { return; }
+  let pos = vec2f((f32(id.x) + 0.5) / f32(SW) * 64.0 - 32.0, (f32(id.y) + 0.5) / f32(SH) * 36.0 - 18.0);
+  let seed = G.x;
+  let warp = vec2f(fbm(pos * 0.22, seed + 7u), fbm(pos * 0.22 + vec2f(5.2, 1.3), seed + 11u));
+  let cloud = fbm(pos * 0.5 + warp * 2.4, seed + 3u);
+  let dom = (fbm(pos * 0.06, seed + 21u) - 0.5) * 1.2;
+  let b1 = fiberLayer(pos, 0.5, seed + 101u, dom, 0.28, 0.85, 0.012, 0.03, 2.6, vec3f(0.0, cos(dom), sin(dom)));
+  let b2 = fiberLayer(pos, 1.4, seed + 202u, dom, 1.0, 2.6, 0.009, 0.02, 1.4, vec3f(0.0));
+  var fI = b1.x * 0.6;
+  var fdir = b1.yz;
+  if (b2.x * 0.9 > fI) { fI = b2.x * 0.9; fdir = b2.yz; }
+  let fine = vnoise(pos * 40.0, seed + 41u);
+  let height = clamp(0.40 * cloud + 0.46 * fI + 0.2 * (fine - 0.5) + 0.08, 0.0, 1.0);
+  let de = min(min(pos.x + 32.0, 32.0 - pos.x), min(pos.y + 18.0, 18.0 - pos.y));
+  let en = fbm(vec2f(pos.x + pos.y * 1.3, pos.y - pos.x * 0.7) * 0.8, seed + 51u);
+  let inset = 0.1 + 0.5 * en + 0.18 * (vnoise(pos * 5.0, seed + 53u) - 0.5) - 0.12 * fI;
+  let mask = smoothstep(0.0, 0.04, de - inset);
+  let thin = smoothstep(0.0, 1.2, de - inset);
+  let sp9 = pos * 16.0;
+  let sc = vec2i(floor(sp9));
+  let sctr = vec2f(sc) + vec2f(rnd2(sc, seed + 63u), rnd2(sc, seed + 64u)) * 0.6 + 0.2;
+  let srad = 0.12 + 0.3 * rnd2(sc, seed + 65u);
+  let speck = step(0.9978, rnd2(sc, seed + 61u)) * (0.35 + 0.5 * rnd2(sc, seed + 62u)) * (1.0 - smoothstep(srad * 0.6, srad, length(sp9 - sctr)));
+  textureStore(o1, vec2i(id.xy), vec4f(height, fdir * (0.3 + 0.7 * fI), mask));
+  textureStore(o2, vec2i(id.xy), vec4f(cloud * mix(0.55, 1.0, thin), fI, speck, thin));
+}
+`;
+
+// state texel: x = surface water, y = suspended pigment, z = pigment caught in fibre, w = paper dampness
+const WGSL_SIM = WGSL_COMMON + /* wgsl */`
+struct SimU { rect: vec4i, a: vec4f, b: vec4f, c: vec4f };
+@group(0) @binding(0) var src: texture_2d<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(2) var pp1: texture_2d<f32>;
+@group(0) @binding(3) var pp2: texture_2d<f32>;
+@group(0) @binding(4) var spl: texture_2d<f32>;
+@group(0) @binding(5) var<uniform> U: SimU;
+// a: flow, tau, absorb, relief   b: evap, evapDamp, aniso, edgeK   c: depBase, wetDep, useSplat, dryGain
+
+fn cellS(c: vec2i) -> vec4f {
+  var s = textureLoad(src, c, 0);
+  if (U.c.z > 0.5) {
+    let sp = textureLoad(spl, c, 0);
+    s.x += sp.x;
+    s.y += sp.y * (1.0 - U.c.y);
+  }
+  return s;
+}
+fn tauOf(s: vec4f) -> f32 {
+  return U.a.y * (1.0 - 0.85 * smoothstep(0.0, 0.012, s.x + 0.03 * s.w));
+}
+
+@compute @workgroup_size(16, 16)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+  if (i32(gid.x) >= U.rect.z || i32(gid.y) >= U.rect.w) { return; }
+  let c = vec2i(gid.xy) + U.rect.xy;
+  if (c.x >= SW || c.y >= SH) { return; }
+  let P1 = textureLoad(pp1, c, 0);
+  if (P1.w < 0.5) { textureStore(dst, c, vec4f(0.0)); return; }
+  let P2 = textureLoad(pp2, c, 0);
+  var S = cellS(c);
+  if (U.c.z > 0.5) {
+    let sp = textureLoad(spl, c, 0);
+    let pr = clamp(sp.w, 0.0, 1.0);
+    let thr = 0.7 - 0.36 * pr;
+    let peak = smoothstep(thr, thr + 0.14, P1.x);
+    S.z += sp.y * U.c.y + sp.z * U.c.w * (0.3 + 0.7 * peak);
+  }
+  let hc = S.x + U.a.w * P1.x;
+  let tauC = tauOf(S);
+  let concC = S.y / max(S.x, 1e-5);
+  var offs = array<vec2i, 8>(vec2i(1, 0), vec2i(-1, 0), vec2i(0, 1), vec2i(0, -1), vec2i(1, 1), vec2i(-1, -1), vec2i(1, -1), vec2i(-1, 1));
+  var dw = 0.0; var dp = 0.0; var dryN = 0.0;
+  for (var k = 0; k < 8; k++) {
+    let o = offs[k];
+    let n = c + o;
+    if (n.x < 0 || n.y < 0 || n.x >= SW || n.y >= SH) { dryN += 1.0; continue; }
+    let Pn = textureLoad(pp1, n, 0);
+    if (Pn.w < 0.5) { dryN += 1.0; continue; }
+    let Sn = cellS(n);
+    let hn = Sn.x + U.a.w * Pn.x;
+    let tauN = tauOf(Sn);
+    let wd = select(0.7071, 1.0, k < 4);
+    let dir = normalize(vec2f(o));
+    let fb = (P1.yz + Pn.yz) * 0.5;
+    let al = dot(dir, fb);
+    let kk = wd * U.a.x * (1.0 + U.b.z * al * al) * (1.0 + 0.4 * (P2.y));
+    let outF = min(kk * max(hc - hn - tauN, 0.0), S.x * 0.1);
+    let inF = min(kk * max(hn - hc - tauC, 0.0), Sn.x * 0.1);
+    let concN = Sn.y / max(Sn.x, 1e-5);
+    dw += inF - outF;
+    dp += inF * concN - outF * concC;
+    if (Sn.x < 0.002) { dryN += 1.0; }
+  }
+  var w = max(S.x + dw, 0.0);
+  var p = max(S.y + dp, 0.0);
+  var d = S.z;
+  var s = S.w;
+  let capa = 0.6 + 0.8 * P2.x;
+  let ab = min(w, U.a.z * (1.0 - s) * capa);
+  let fAbs = ab / max(w, 1e-5);
+  w -= ab;
+  s = min(s + ab * 7.0, 1.0);
+  let front = select(0.0, dryN / 8.0, w > 0.002);
+  w = max(w - U.b.x * (1.0 + U.b.w * front), 0.0);
+  s = max(s - U.b.y * (1.0 - 0.7 * smoothstep(0.0, 0.02, w)), 0.0);
+  var dep = p * clamp(U.c.x + fAbs * 0.85 + 0.05 * P2.y + 0.05 * front, 0.0, 1.0);
+  if (w < 0.0015) { dep = p; s = min(s + w * 7.0, 1.0); w = 0.0; }
+  p -= dep;
+  d = min(d + dep, 14.0);
+  textureStore(dst, c, vec4f(w, p, d, s));
+}
+`;
+
+const WGSL_SPLAT = /* wgsl */`
+struct Cap { a: vec4f, b: vec4f, c: vec4f };
+@group(0) @binding(0) var<storage, read> caps: array<Cap>;
+struct VO { @builtin(position) pos: vec4f, @location(0) xz: vec2f, @location(1) @interpolate(flat) id: u32 };
+@vertex fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VO {
+  let cp = caps[ii];
+  let r = cp.b.x + 0.04;
+  let mn = min(cp.a.xy, cp.a.zw) - vec2f(r);
+  let mx = max(cp.a.xy, cp.a.zw) + vec2f(r);
+  var corners = array<vec2f, 6>(vec2f(0.0, 0.0), vec2f(1.0, 0.0), vec2f(0.0, 1.0), vec2f(0.0, 1.0), vec2f(1.0, 0.0), vec2f(1.0, 1.0));
+  let q = mix(mn, mx, corners[vi]);
+  let uv = vec2f((q.x + 32.0) / 64.0, (q.y + 18.0) / 36.0);
+  var o: VO;
+  o.pos = vec4f(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 0.0, 1.0);
+  o.xz = q;
+  o.id = ii;
+  return o;
+}
+@fragment fn fs(v: VO) -> @location(0) vec4f {
+  let cp = caps[v.id];
+  let pa = v.xz - cp.a.xy;
+  let ba = cp.a.zw - cp.a.xy;
+  let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);
+  let dist = length(pa - ba * h);
+  let r = cp.b.x;
+  let cov = 1.0 - smoothstep(r * 0.45, r, dist);
+  if (cov <= 0.0) { discard; }
+  return vec4f(cp.b.y, cp.b.z, cp.b.w, cp.c.x) * cov;
+}
+`;
+
+const WGSL_SCENE = WGSL_COMMON + /* wgsl */`
+struct Frame {
+  viewProj: mat4x4f,
+  invViewProj: mat4x4f,
+  cam: vec4f,
+  light: vec4f,      // xyz dir to key light, w grid on
+  paperCol: vec4f,   // w metal
+  inkLight: vec4f,   // w ink k
+  inkDark: vec4f,    // w skeleton
+  feltCol: vec4f,
+  gridCol: vec4f,
+  weightC: vec4f,
+  weightH: vec4f,    // w corner radius
+  bA: vec4f,         // brush tip centroid
+  bB: vec4f,         // brush handle top
+  viewport: vec4f,
+  misc: vec4f,       // x pixel angle, y time
+  caps: array<vec4f, 16>,
+};
+@group(0) @binding(0) var<uniform> F: Frame;
+@group(0) @binding(1) var samp: sampler;
+@group(0) @binding(2) var tp1: texture_2d<f32>;
+@group(0) @binding(3) var tp2: texture_2d<f32>;
+@group(0) @binding(4) var stA: texture_2d<f32>;
+
+const BG = vec3f(0.905, 0.902, 0.893);
+const TABLE = vec3f(0.858, 0.853, 0.843);
+
+fn stateAt(uv: vec2f) -> vec4f {
+  let f = uv * vec2f(f32(SW), f32(SH)) - 0.5;
+  let i = vec2i(floor(f));
+  let t = fract(f);
+  let mx = vec2i(SW - 1, SH - 1);
+  let a = textureLoad(stA, clamp(i, vec2i(0), mx), 0);
+  let b = textureLoad(stA, clamp(i + vec2i(1, 0), vec2i(0), mx), 0);
+  let c = textureLoad(stA, clamp(i + vec2i(0, 1), vec2i(0), mx), 0);
+  let d = textureLoad(stA, clamp(i + vec2i(1, 1), vec2i(0), mx), 0);
+  return mix(mix(a, b, t.x), mix(c, d, t.x), t.y);
+}
+
+fn sdCap(p: vec3f, a: vec3f, b: vec3f, r: f32) -> f32 {
+  let pa = p - a; let ba = b - a;
+  let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
+fn sdRBox(p: vec3f, b: vec3f, r: f32) -> f32 {
+  let q = abs(p) - b + vec3f(r);
+  return length(max(q, vec3f(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
+}
+fn segDist(p1: vec3f, q1: vec3f, p2: vec3f, q2: vec3f) -> f32 {
+  let d1 = q1 - p1; let d2 = q2 - p2; let r = p1 - p2;
+  let a = dot(d1, d1); let e = max(dot(d2, d2), 1e-6); let f = dot(d2, r);
+  let c = dot(d1, r); let b = dot(d1, d2); let den = a * e - b * b;
+  var s = 0.0;
+  if (den > 1e-6) { s = clamp((b * f - c * e) / den, 0.0, 1.0); }
+  var t = (b * s + f) / e;
+  if (t < 0.0) { t = 0.0; s = clamp(-c / a, 0.0, 1.0); }
+  else if (t > 1.0) { t = 1.0; s = clamp((b - c) / a, 0.0, 1.0); }
+  return length((p1 + d1 * s) - (p2 + d2 * t));
+}
+fn sdBrush(p: vec3f) -> f32 {
+  var h = 1e5;
+  for (var k = 0; k < 8; k++) {
+    let a = F.caps[k * 2];
+    if (a.w > 0.0) { h = min(h, sdCap(p, a.xyz, F.caps[k * 2 + 1].xyz, a.w)); }
+  }
+  return h;
+}
+fn sdWeight(p: vec3f) -> f32 { return sdRBox(p - F.weightC.xyz, F.weightH.xyz, F.weightH.w); }
+
+fn shadow(p: vec3f) -> f32 {
+  let L = F.light.xyz;
+  let q = p + L * 60.0;
+  let nb = segDist(p, q, F.bA.xyz, F.bB.xyz) < 3.5;
+  let wa = F.weightC.xyz - vec3f(F.weightH.x, 0.0, 0.0);
+  let wb = F.weightC.xyz + vec3f(F.weightH.x, 0.0, 0.0);
+  let nw = segDist(p, q, wa, wb) < 5.0;
+  if (!nb && !nw) { return 1.0; }
+  var res = 1.0;
+  var t = 0.05;
+  for (var i = 0; i < 48; i++) {
+    let pp = p + L * t;
+    var h = 1e5;
+    if (nw) { h = sdWeight(pp); }
+    if (nb) { h = min(h, sdBrush(pp)); }
+    res = min(res, 8.0 * h / t);
+    t += clamp(h, 0.03, 2.0);
+    if (res < 0.002 || t > 40.0) { break; }
+  }
+  let s = clamp(res, 0.0, 1.0);
+  return s * s * (3.0 - 2.0 * s);
+}
+fn aoAt(p: vec3f) -> f32 {
+  let d = min(sdWeight(p), sdBrush(p));
+  return mix(0.45, 1.0, smoothstep(0.0, 1.6, d));
+}
+fn softbox(p: vec3f, r: vec3f) -> f32 {
+  if (r.y <= 0.02) { return 0.0; }
+  let t = (110.0 - p.y) / r.y;
+  let q = p.xz + r.xz * t;
+  let dq = abs(q - vec2f(-15.0, -80.0)) - vec2f(55.0, 34.0);
+  let e = max(dq.x, dq.y);
+  return 1.0 - smoothstep(-14.0, 14.0, e);
+}
+
+fn drawGrid(q: vec2f, base: vec3f, px: f32) -> vec3f {
+  let cell = 15.0;
+  let g = q - vec2f(-30.0, -15.0);
+  if (g.x < -0.2 || g.y < -0.2 || g.x > 60.2 || g.y > 30.2) { return base; }
+  let l = g - floor(g / cell) * cell;
+  let lw = max(0.05, px);
+  let dB = min(min(l.x, cell - l.x), min(l.y, cell - l.y));
+  var a = 1.0 - smoothstep(lw * 0.5, lw * 0.5 + px, dB);
+  let dash1 = step(fract((l.x + l.y) / 0.9), 0.5);
+  let dash2 = step(fract((l.x - l.y) / 0.9), 0.5);
+  let dM = min(abs(l.x - 7.5), abs(l.y - 7.5));
+  let dD1 = abs(l.x - l.y) * 0.7071;
+  let dD2 = abs(l.x + l.y - cell) * 0.7071;
+  let lw2 = lw * 0.35;
+  let aM = (1.0 - smoothstep(lw2, lw2 + px, dM)) * dash1;
+  let aD = max((1.0 - smoothstep(lw2, lw2 + px, dD1)) * dash1, (1.0 - smoothstep(lw2, lw2 + px, dD2)) * dash2);
+  a = max(a, 0.65 * max(aM, aD));
+  return mix(base, F.gridCol.rgb, a * F.gridCol.w);
+}
+
+// paper albedo with ink; returns rgb and ink coverage (1-T) in w
+fn paperAlbedo(uv: vec2f, q: vec2f, S: vec4f, withGrid: bool, px: f32) -> vec4f {
+  let P2 = textureSampleLevel(tp2, samp, uv, 0.0);
+  var base = F.paperCol.rgb * (0.94 + 0.12 * (P2.x - 0.5));
+  base = mix(base, min(base * 1.05 + vec3f(0.012), vec3f(1.0)), P2.y * 0.45);
+  base *= 1.0 - 0.55 * P2.z;
+  base *= 1.0 - 0.06 * (1.0 - P2.w);
+  if (withGrid) { base = drawGrid(q, base, px); }
+  base *= 1.0 - 0.17 * S.w;
+  let D = S.z + 0.9 * S.y;
+  let T = exp(-F.inkLight.w * D);
+  let ic = mix(F.inkLight.rgb, F.inkDark.rgb, smoothstep(0.08, 1.4, D));
+  return vec4f(base * T + ic * (1.0 - T), 1.0 - T);
+}
+
+fn shadePaper(p: vec3f, uv: vec2f, rd: vec3f, tc: f32) -> vec3f {
+  let S = stateAt(uv);
+  let e = vec2f(1.0 / f32(SW), 1.0 / f32(SH));
+  let hx = textureSampleLevel(tp1, samp, uv + vec2f(e.x, 0.0), 0.0).x - textureSampleLevel(tp1, samp, uv - vec2f(e.x, 0.0), 0.0).x;
+  let hz = textureSampleLevel(tp1, samp, uv + vec2f(0.0, e.y), 0.0).x - textureSampleLevel(tp1, samp, uv - vec2f(0.0, e.y), 0.0).x;
+  let e2 = e * 1.5;
+  let wx = stateAt(uv + vec2f(e2.x, 0.0)).x - stateAt(uv - vec2f(e2.x, 0.0)).x;
+  let wz = stateAt(uv + vec2f(0.0, e2.y)).x - stateAt(uv - vec2f(0.0, e2.y)).x;
+  let n = normalize(vec3f(-(hx * 0.12 + wx * 4.0), 1.0, -(hz * 0.12 + wz * 4.0)));
+  let px = tc * F.misc.x / max(-rd.y, 0.3);
+  let alb = paperAlbedo(uv, p.xz, S, F.light.w > 0.5, px);
+  var c = alb.rgb;
+  let L = F.light.xyz;
+  let v = -rd;
+  let sh = shadow(p + vec3f(0.0, 0.01, 0.0));
+  let ao = aoAt(p);
+  let dif = max(dot(n, L), 0.0);
+  c *= 0.47 * ao + 0.55 * dif * sh;
+  // wet gloss
+  let r = reflect(rd, n);
+  let wet = clamp(smoothstep(0.0, 0.03, S.x) + 0.4 * S.w * alb.w, 0.0, 1.0);
+  let fr = 0.02 + 0.98 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
+  let hv = normalize(L + v);
+  let key = pow(max(dot(n, hv), 0.0), 180.0) * sh;
+  c += vec3f(0.96, 0.97, 1.0) * wet * (softbox(p, r) * (0.10 + 1.6 * fr) + key * 0.5);
+  // gold leaf flakes
+  if (F.paperCol.w > 0.5) {
+    let gm = alb.w;
+    let flc = vec2i(floor(p.xz * 42.0));
+    let ph = rnd2(flc, 29u) * 6.2832;
+    let rn = vec2f(rnd2(flc, 7u), rnd2(flc, 13u)) - 0.5 + 0.18 * vec2f(sin(F.misc.y * 0.9 + ph), cos(F.misc.y * 0.7 + ph));
+    let nf = normalize(vec3f(rn.x * 0.9, 1.0, rn.y * 0.9));
+    let spark = pow(max(dot(nf, hv), 0.0), 70.0) * step(0.55, rnd2(flc, 19u)) * sh;
+    let sbf = softbox(p, reflect(rd, nf)) * step(0.62, rnd2(flc, 23u));
+    c = mix(c, c * 0.72, gm) + F.inkDark.rgb * gm * (0.45 * softbox(p, r) + 2.4 * spark + 0.7 * sbf);
+  }
+  return c;
+}
+
+fn shadeFelt(p: vec3f, n: vec3f) -> vec3f {
+  let fz = vnoise(p.xz * 24.0, 3u) * 0.6 + vnoise(p.xz * 70.0, 5u) * 0.4;
+  let c = F.feltCol.rgb * (0.86 + 0.28 * fz);
+  var sh = 1.0;
+  var ao = 1.0;
+  if (n.y > 0.5) {
+    sh = shadow(p);
+    let uv = vec2f((p.x + 32.0) / 64.0, (p.z + 18.0) / 36.0);
+    if (all(uv > vec2f(-0.03)) && all(uv < vec2f(1.03))) {
+      let o = vec2f(0.3 / 64.0, 0.3 / 36.0);
+      let m = textureSampleLevel(tp1, samp, uv + vec2f(o.x, 0.0), 0.0).w + textureSampleLevel(tp1, samp, uv - vec2f(o.x, 0.0), 0.0).w
+            + textureSampleLevel(tp1, samp, uv + vec2f(0.0, o.y), 0.0).w + textureSampleLevel(tp1, samp, uv - vec2f(0.0, o.y), 0.0).w;
+      ao = 1.0 - 0.07 * m;
+    }
+  }
+  let dif = max(dot(n, F.light.xyz), 0.0);
+  return c * (0.55 * ao + 0.5 * dif * sh);
+}
+
+fn shadeTable(p: vec3f) -> vec3f {
+  let dq = abs(p.xz) - vec2f(35.5, 21.5);
+  let df = length(max(dq, vec2f(0.0))) + min(max(dq.x, dq.y), 0.0);
+  let ao = mix(0.78, 1.0, smoothstep(0.0, 3.5, df));
+  let dif = max(F.light.y, 0.0);
+  let c = TABLE * (0.62 + 0.42 * dif) * ao;
+  return mix(c, BG, smoothstep(60.0, 190.0, length(p.xz - vec2f(0.0, -10.0))));
+}
+
+fn rayBox(ro: vec3f, rd: vec3f, bmin: vec3f, bmax: vec3f) -> vec4f {
+  let inv = 1.0 / rd;
+  let t0 = (bmin - ro) * inv;
+  let t1 = (bmax - ro) * inv;
+  let tmin = min(t0, t1);
+  let tmax = max(t0, t1);
+  let tn = max(max(tmin.x, tmin.y), tmin.z);
+  let tf = min(min(tmax.x, tmax.y), tmax.z);
+  if (tn > tf || tf < 0.0 || tn < 0.0) { return vec4f(-1.0, 0.0, 0.0, 0.0); }
+  var n = vec3f(0.0, 0.0, -sign(rd.z));
+  if (tn == tmin.x) { n = vec3f(-sign(rd.x), 0.0, 0.0); }
+  else if (tn == tmin.y) { n = vec3f(0.0, -sign(rd.y), 0.0); }
+  return vec4f(tn, n);
+}
+
+struct FSV { @builtin(position) pos: vec4f };
+@vertex fn vsFull(@builtin(vertex_index) vi: u32) -> FSV {
+  var p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+  var o: FSV;
+  o.pos = vec4f(p[vi], 0.0, 1.0);
+  return o;
+}
+
+struct EO { @location(0) col: vec4f, @builtin(frag_depth) depth: f32 };
+@fragment fn fsEnv(v: FSV) -> EO {
+  let ndc = vec2f(v.pos.x / F.viewport.x * 2.0 - 1.0, 1.0 - v.pos.y / F.viewport.y * 2.0);
+  let a4 = F.invViewProj * vec4f(ndc, 0.0, 1.0);
+  let b4 = F.invViewProj * vec4f(ndc, 1.0, 1.0);
+  let ro = F.cam.xyz;
+  let rd = normalize(b4.xyz / b4.w - a4.xyz / a4.w);
+  var col = BG;
+  var hp = vec3f(0.0);
+  var hit = false;
+  let fb = rayBox(ro, rd, vec3f(-35.5, -0.45, -21.5), vec3f(35.5, -0.03, 21.5));
+  if (fb.x > 0.0) {
+    hp = ro + rd * fb.x; col = shadeFelt(hp, fb.yzw); hit = true;
+  } else if (rd.y < 0.0) {
+    let t = (-0.45 - ro.y) / rd.y; hp = ro + rd * t; col = shadeTable(hp); hit = true;
+  }
+  if (rd.y < 0.0) {
+    let t = -ro.y / rd.y;
+    let pp = ro + rd * t;
+    let uv = vec2f((pp.x + 32.0) / 64.0, (pp.z + 18.0) / 36.0);
+    if (all(uv > vec2f(0.0)) && all(uv < vec2f(1.0))) {
+      let m = textureSampleLevel(tp1, samp, uv, 0.0).w;
+      let al = smoothstep(0.3, 0.7, m);
+      if (al > 0.0) {
+        col = mix(col, shadePaper(pp, uv, rd, t), al);
+        if (al > 0.5) { hp = pp; }
+        hit = true;
+      }
+    }
+  }
+  var o: EO;
+  o.col = vec4f(clamp(col, vec3f(0.0), vec3f(1.0)), 1.0);
+  if (hit) { let cl = F.viewProj * vec4f(hp, 1.0); o.depth = clamp(cl.z / cl.w, 0.0, 1.0); } else { o.depth = 1.0; }
+  return o;
+}
+
+@fragment fn fsExport(v: FSV) -> @location(0) vec4f {
+  let uv = v.pos.xy / vec2f(${EXP_W}.0, ${EXP_H}.0);
+  let P1 = textureSampleLevel(tp1, samp, uv, 0.0);
+  let S = stateAt(uv);
+  let q = vec2f(uv.x * 64.0 - 32.0, uv.y * 36.0 - 18.0);
+  let alb = paperAlbedo(uv, q, S, false, 0.02);
+  let e = vec2f(1.0 / f32(SW), 1.0 / f32(SH));
+  let hx = textureSampleLevel(tp1, samp, uv + vec2f(e.x, 0.0), 0.0).x - textureSampleLevel(tp1, samp, uv - vec2f(e.x, 0.0), 0.0).x;
+  let hz = textureSampleLevel(tp1, samp, uv + vec2f(0.0, e.y), 0.0).x - textureSampleLevel(tp1, samp, uv - vec2f(0.0, e.y), 0.0).x;
+  var c = alb.rgb * (1.0 + 0.22 * (-hx * 0.5 + hz * 0.3));
+  if (F.paperCol.w > 0.5) {
+    let flc = vec2i(floor(q * 42.0));
+    let spark = step(0.9, rnd2(flc, 19u)) * alb.w;
+    c += F.inkDark.rgb * alb.w * 0.15 + vec3f(1.0, 0.92, 0.7) * spark * 0.35;
+  }
+  return vec4f(clamp(c, vec3f(0.0), vec3f(1.0)), smoothstep(0.3, 0.7, P1.w));
+}
+
+// ---------------------------------------------------------------- meshes
+struct Obj { model: mat4x4f, info: vec4f };
+@group(1) @binding(0) var<uniform> O: Obj;
+struct MI { @location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) at: vec4f };
+struct MO { @builtin(position) cp: vec4f, @location(0) wp: vec3f, @location(1) n: vec3f, @location(2) at: vec4f };
+@vertex fn vsMesh(i: MI) -> MO {
+  let s = vec3f(O.info.x, 1.0, O.info.x);
+  let wp = (O.model * vec4f(i.pos * s, 1.0)).xyz;
+  var o: MO;
+  o.cp = F.viewProj * vec4f(wp, 1.0);
+  o.wp = wp;
+  o.n = normalize((O.model * vec4f(i.nrm / s, 0.0)).xyz);
+  o.at = i.at;
+  return o;
+}
+@fragment fn fsMesh(i: MO) -> @location(0) vec4f {
+  let n = normalize(i.n);
+  let v = normalize(F.cam.xyz - i.wp);
+  let L = F.light.xyz;
+  let m = i.at.x;
+  var base = vec3f(0.5);
+  var gloss = 0.3;
+  var specK = 0.2;
+  if (m < 0.5) {
+    base = vec3f(0.14, 0.035, 0.028); specK = 1.0; gloss = 0.95;
+    base *= 0.9 + 0.2 * vnoise(vec2f(i.at.z * 50.0, i.at.y * 3.0), 3u);
+  } else if (m < 1.5) {
+    let y = i.at.y; let ang = i.at.z;
+    let streak = vnoise(vec2f(ang * 60.0, y * 0.6), 9u) * 0.6 + vnoise(vec2f(ang * 180.0, y * 2.5), 4u) * 0.4;
+    base = vec3f(0.80, 0.70, 0.47) * (0.84 + 0.24 * streak);
+    let n1 = (y - 9.0) / 0.13; let n2 = (y - 16.2) / 0.13;
+    let node = exp(-n1 * n1) + exp(-n2 * n2);
+    base = mix(base, vec3f(0.55, 0.42, 0.24), clamp(node, 0.0, 1.0) * 0.85);
+    base *= 1.0 - 0.2 * smoothstep(0.7, 0.9, vnoise(vec2f(ang * 9.0, y * 0.8), 17u));
+    specK = 0.4; gloss = 0.55;
+  } else if (m < 2.5) {
+    base = vec3f(0.11, 0.065, 0.045); specK = 0.7; gloss = 0.8;
+  } else {
+    let q = i.at.yzw;
+    let g = fbm(vec2f(q.x * 0.08, q.y * 3.0 + q.z * 2.0), 31u);
+    let rings = sin((q.y * 6.0 + q.z * 4.0 + g * 9.0) * 1.7) * 0.5 + 0.5;
+    let fleck = vnoise(vec2f(q.x * 4.0, (q.y + q.z) * 40.0), 37u);
+    base = mix(vec3f(0.29, 0.17, 0.095), vec3f(0.43, 0.27, 0.15), rings * 0.65 + 0.35 * g) * (0.92 + 0.12 * fleck);
+    specK = 0.3; gloss = 0.5;
+  }
+  let dif = max(dot(n, L), 0.0);
+  let hemi = mix(0.40, 0.62, n.y * 0.5 + 0.5);
+  var c = base * (hemi + 0.62 * dif);
+  let h = normalize(L + v);
+  let sp = pow(max(dot(n, h), 0.0), mix(16.0, 220.0, gloss)) * specK;
+  let r = reflect(-v, n);
+  let fr = 0.04 + 0.96 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
+  c += vec3f(1.0) * (sp * 0.7 + softbox(i.wp, r) * specK * gloss * (0.25 + fr));
+  return vec4f(c, 1.0);
+}
+
+// --------------------------------------------------------------- bristles
+@group(1) @binding(0) var<storage, read> BP: array<vec4f>;
+@group(1) @binding(1) var<uniform> BU: vec4f;
+const NPc: u32 = ${NP}u;
+const NSEG: u32 = ${(NP - 1) * 3}u;
+fn bp(b: u32, j: i32) -> vec3f { return BP[b * NPc + u32(clamp(j, 0, i32(NPc) - 1))].xyz; }
+fn crs(b: u32, s: f32) -> vec3f {
+  let j = i32(floor(s));
+  let t = s - f32(j);
+  let p0 = bp(b, j - 1); let p1 = bp(b, j); let p2 = bp(b, j + 1); let p3 = bp(b, j + 2);
+  let t2 = t * t; let t3 = t2 * t;
+  return 0.5 * ((2.0 * p1) + (-p0 + p2) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3);
+}
+struct BO { @builtin(position) cp: vec4f, @location(0) t: f32, @location(1) ink: f32, @location(2) tg: vec3f, @location(3) wp: vec3f, @location(4) side: f32 };
+@vertex fn vsBr(@builtin(vertex_index) vi: u32, @builtin(instance_index) b: u32) -> BO {
+  let seg = vi / 6u;
+  let cn = vi % 6u;
+  var ko = array<u32, 6>(0u, 0u, 1u, 1u, 0u, 1u);
+  var sd = array<f32, 6>(-1.0, 1.0, -1.0, -1.0, 1.0, 1.0);
+  let smax = f32(NPc - 1u);
+  let s = f32(seg + ko[cn]) / f32(NSEG) * smax;
+  let p = crs(b, s);
+  let tg = normalize(crs(b, min(s + 0.2, smax)) - crs(b, max(s - 0.2, 0.0)) + vec3f(0.0, 1e-5, 0.0));
+  let vdir = normalize(F.cam.xyz - p);
+  let cx = cross(tg, vdir);
+  let cl = length(cx);
+  let sdir = select(vec3f(1.0, 0.0, 0.0), cx / cl, cl > 1e-4);
+  let t = s / smax;
+  let w = BU.x * (1.0 - 0.8 * pow(t, 1.8));
+  let wp = p + sdir * sd[cn] * w;
+  var o: BO;
+  o.cp = F.viewProj * vec4f(wp, 1.0);
+  o.t = t;
+  o.ink = BP[b * NPc].w;
+  o.tg = tg;
+  o.wp = wp;
+  o.side = sd[cn];
+  return o;
+}
+@fragment fn fsBr(i: BO) -> @location(0) vec4f {
+  let L = F.light.xyz;
+  let v = normalize(F.cam.xyz - i.wp);
+  let T = normalize(i.tg);
+  let wool = vec3f(0.935, 0.92, 0.875);
+  var inkc = F.inkDark.rgb * 0.5;
+  if (F.paperCol.w > 0.5) { inkc = F.inkDark.rgb * 0.9; }
+  let amt = clamp(clamp(i.ink * 1.3, 0.0, 1.0) * (0.35 + 0.65 * i.t) * smoothstep(0.0, 0.3, i.t + 0.1), 0.0, 0.95);
+  let base = mix(wool, inkc, amt);
+  let tl = dot(T, L);
+  let th = dot(T, normalize(L + v));
+  let dif = mix(0.45, 1.0, sqrt(max(1.0 - tl * tl, 0.0)));
+  let spec = pow(sqrt(max(1.0 - th * th, 0.0)), 60.0) * mix(0.12, 0.55, amt);
+  let occ = mix(0.5, 1.0, smoothstep(0.0, 0.3, i.t)) * mix(0.82, 1.0, 1.0 - abs(i.side) * 0.5);
+  return vec4f(base * dif * occ * 0.97 + vec3f(spec), 1.0);
+}
+
+struct SKO { @builtin(position) cp: vec4f, @location(0) col: vec3f };
+fn skCol(ink: f32) -> vec3f { return mix(vec3f(0.95, 0.42, 0.08), vec3f(0.08, 0.36, 0.92), clamp(ink, 0.0, 1.0)); }
+@vertex fn vsSkLine(@builtin(vertex_index) vi: u32) -> SKO {
+  let seg = vi / 2u;
+  let e = vi % 2u;
+  let b = seg / (NPc - 1u);
+  let j = seg % (NPc - 1u) + e;
+  let q = BP[b * NPc + j];
+  var o: SKO;
+  o.cp = F.viewProj * vec4f(q.xyz, 1.0);
+  o.col = skCol(BP[b * NPc].w);
+  return o;
+}
+@vertex fn vsSkDot(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> SKO {
+  var c = array<vec2f, 6>(vec2f(-1.0, -1.0), vec2f(1.0, -1.0), vec2f(-1.0, 1.0), vec2f(-1.0, 1.0), vec2f(1.0, -1.0), vec2f(1.0, 1.0));
+  let q = BP[ii];
+  var cp = F.viewProj * vec4f(q.xyz, 1.0);
+  let px = 2.2 / F.viewport.xy * 2.0;
+  cp = vec4f(cp.xy + c[vi] * px * cp.w, cp.z, cp.w);
+  var o: SKO;
+  o.cp = cp;
+  let b = ii / NPc;
+  o.col = skCol(BP[b * NPc].w) * 0.8;
+  return o;
+}
+@fragment fn fsSk(i: SKO) -> @location(0) vec4f { return vec4f(i.col, 1.0); }
+`;
+
+// ------------------------------------------------------------------ math
+function norm3(v) { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+function cross3(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+function dot3(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function mul4(a, b) {
+  const o = new Float32Array(16);
+  for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+    let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = s;
+  }
+  return o;
+}
+function persp(fy, asp, n, f) {
+  const t = 1 / Math.tan(fy / 2), o = new Float32Array(16);
+  o[0] = t / asp; o[5] = t; o[10] = f / (n - f); o[11] = -1; o[14] = n * f / (n - f); return o;
+}
+function lookAt(e, c, up) {
+  const z = norm3([e[0] - c[0], e[1] - c[1], e[2] - c[2]]), x = norm3(cross3(up, z)), y = cross3(z, x);
+  return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot3(x, e), -dot3(y, e), -dot3(z, e), 1]);
+}
+function inv4(m) {
+  const a00 = m[0], a01 = m[1], a02 = m[2], a03 = m[3], a10 = m[4], a11 = m[5], a12 = m[6], a13 = m[7],
+    a20 = m[8], a21 = m[9], a22 = m[10], a23 = m[11], a30 = m[12], a31 = m[13], a32 = m[14], a33 = m[15];
+  const b00 = a00 * a11 - a01 * a10, b01 = a00 * a12 - a02 * a10, b02 = a00 * a13 - a03 * a10, b03 = a01 * a12 - a02 * a11,
+    b04 = a01 * a13 - a03 * a11, b05 = a02 * a13 - a03 * a12, b06 = a20 * a31 - a21 * a30, b07 = a20 * a32 - a22 * a30,
+    b08 = a20 * a33 - a23 * a30, b09 = a21 * a32 - a22 * a31, b10 = a21 * a33 - a23 * a31, b11 = a22 * a33 - a23 * a32;
+  const det = 1 / (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06);
+  return new Float32Array([
+    (a11 * b11 - a12 * b10 + a13 * b09) * det, (a02 * b10 - a01 * b11 - a03 * b09) * det, (a31 * b05 - a32 * b04 + a33 * b03) * det, (a22 * b04 - a21 * b05 - a23 * b03) * det,
+    (a12 * b08 - a10 * b11 - a13 * b07) * det, (a00 * b11 - a02 * b08 + a03 * b07) * det, (a32 * b02 - a30 * b05 - a33 * b01) * det, (a20 * b05 - a22 * b02 + a23 * b01) * det,
+    (a10 * b10 - a11 * b08 + a13 * b06) * det, (a01 * b08 - a00 * b10 - a03 * b06) * det, (a30 * b04 - a31 * b02 + a33 * b00) * det, (a21 * b02 - a20 * b04 - a23 * b00) * det,
+    (a11 * b07 - a10 * b09 - a12 * b06) * det, (a00 * b09 - a01 * b07 + a02 * b06) * det, (a31 * b01 - a30 * b03 - a32 * b00) * det, (a20 * b03 - a21 * b01 + a22 * b00) * det]);
+}
+function xf4(m, x, y, z, w) {
+  return [m[0] * x + m[4] * y + m[8] * z + m[12] * w, m[1] * x + m[5] * y + m[9] * z + m[13] * w,
+    m[2] * x + m[6] * y + m[10] * z + m[14] * w, m[3] * x + m[7] * y + m[11] * z + m[15] * w];
+}
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const smooth = (x, a, b) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+// deterministic rng for bristle layout
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+// ------------------------------------------------------------------ brush physics (CPU, 240 Hz PBD)
+const X = new Float32Array(NPT * 3), XP = new Float32Array(NPT * 3);
+const REST = new Float32Array(NPT * 3), WR = new Float32Array(NPT * 3), SEG = new Float32Array(NPT);
+const LC = new Float32Array(NPT * 2), LCF = new Uint8Array(NPT), CON = new Uint8Array(NPT);
+const CEN = new Float32Array(NP * 3), SPR = new Float32Array(NP);
+const INK = new Float32Array(NB);
+const BR = { rx: new Float32Array(NB), rz: new Float32Array(NB), ux: new Float32Array(NB), uz: new Float32Array(NB), lenF: new Float32Array(NB), refill: new Float32Array(NB) };
+{
+  const rnd = mulberry(1010);
+  for (let i = 0; i < NB; i++) {
+    const rr = Math.sqrt((i + 0.5) / NB), a = i * 2.399963;
+    BR.rx[i] = rr * Math.cos(a); BR.rz[i] = rr * Math.sin(a);
+    BR.ux[i] = Math.cos(a); BR.uz[i] = Math.sin(a);
+    BR.lenF[i] = (1 - 0.30 * Math.pow(rr, 1.8)) * (0.95 + 0.1 * rnd());
+    BR.refill[i] = (0.45 + 1.0 * rnd()) * (1.15 - 0.55 * rr);
+  }
+}
+const pose = { x: 8, y: 6, z: 4, vx: 0, vy: 0, vz: 0, tlx: 0.09, tlz: -0.05, press: 0, M: new Float32Array(9), ax: 0, ay: 1, az: 0 };
+const brush = { res: 1, touching: 0, strokes: 0, inStroke: false, idle: 0, tipSpeed: 0, tipX: 0, tipZ: 0 };
+
+function setAxis(tlx, tlz) {
+  const a = norm3([tlx, 1, tlz]);
+  pose.ax = a[0]; pose.ay = a[1]; pose.az = a[2];
+  const s = Math.hypot(a[0], a[2]), c = a[1], M = pose.M;
+  let kx = 0, kz = 0;
+  if (s > 1e-6) { kx = a[2] / s; kz = -a[0] / s; }
+  const C = 1 - c;
+  M[0] = c + C * kx * kx; M[1] = -s * kz; M[2] = C * kx * kz;
+  M[3] = s * kz; M[4] = c; M[5] = -s * kx;
+  M[6] = C * kx * kz; M[7] = s * kx; M[8] = c + C * kz * kz;
+}
+function computeRest() {
+  const L0 = 3.2 * P.size, r0 = 0.34 * P.size, M = pose.M;
+  for (let i = 0; i < NB; i++) {
+    const wet = smooth(INK[i], 0.08, 0.5), L = L0 * BR.lenF[i];
+    for (let j = 0; j < NP; j++) {
+      const t = j / (NP - 1);
+      const prof = (1 + 0.5 * Math.sin(Math.PI * t * 0.85)) * Math.pow(1 - 0.92 * t, 1.1);
+      const r = r0 * prof * (1 + (1 - wet) * 0.6 * t * t);
+      const o = (i * NP + j) * 3;
+      const lx = BR.rx[i] * r, ly = -L * t, lz = BR.rz[i] * r;
+      REST[o] = lx; REST[o + 1] = ly; REST[o + 2] = lz;
+      WR[o] = pose.x + M[0] * lx + M[1] * ly + M[2] * lz;
+      WR[o + 1] = pose.y + M[3] * lx + M[4] * ly + M[5] * lz;
+      WR[o + 2] = pose.z + M[6] * lx + M[7] * ly + M[8] * lz;
+      if (j > 0) SEG[i * NP + j] = Math.hypot(lx - REST[o - 3], ly - REST[o - 2], lz - REST[o - 1]);
+    }
+  }
+}
+function computeCentroids() {
+  CEN.fill(0);
+  for (let i = 0; i < NB; i++) for (let j = 0; j < NP; j++) { const o = (i * NP + j) * 3; CEN[j * 3] += X[o]; CEN[j * 3 + 1] += X[o + 1]; CEN[j * 3 + 2] += X[o + 2]; }
+  for (let j = 0; j < NP * 3; j++) CEN[j] /= NB;
+}
+function resetBrush(x, z, hover = true) {
+  pose.x = x; pose.z = z; pose.y = hover ? 3.2 * P.size + 2.6 : 3.2 * P.size;
+  pose.vx = pose.vy = pose.vz = 0; pose.tlx = 0.09; pose.tlz = -0.05; pose.press = 0;
+  setAxis(pose.tlx, pose.tlz); computeRest();
+  X.set(WR); XP.set(WR); LCF.fill(0); CON.fill(0);
+}
+function collide(o, wet) {
+  if (X[o + 1] < RAD) X[o + 1] = RAD;
+  const x = X[o], y = X[o + 1], z = X[o + 2];
+  if (y < 2 * WEIGHT.hy + RAD && Math.abs(x - WEIGHT.cx) < WEIGHT.hx && Math.abs(z - WEIGHT.cz) < WEIGHT.hz) X[o + 1] = 2 * WEIGHT.hy + RAD;
+  // never above the ferrule
+  const ax = (X[o] - pose.x) * -pose.ax + (X[o + 1] - pose.y) * -pose.ay + (X[o + 2] - pose.z) * -pose.az;
+  if (ax < 0.04) { const d = 0.04 - ax; X[o] -= pose.ax * d; X[o + 1] -= pose.ay * d; X[o + 2] -= pose.az * d; }
+}
+function ftl(o, op, len) {
+  let dx = X[o] - X[op], dy = X[o + 1] - X[op + 1], dz = X[o + 2] - X[op + 2];
+  const l = Math.hypot(dx, dy, dz) || 1e-6, s = len / l;
+  X[o] = X[op] + dx * s; X[o + 1] = X[op + 1] + dy * s; X[o + 2] = X[op + 2] + dz * s;
+}
+
+// capsule staging (reused, never reallocated)
+const capStage = new Float32Array(CAP_MAX * CAP_F);
+let capCount = 0, tickFirst = 0;
+const frameTicks = [];
+const act = { valid: false, x0: 0, y0: 0, x1: 0, y1: 0, lastSplatTick: -1e9 };
+let tickBox = null;
+function addCap(ax, az, bx, bz, r, w, pg, dry, pr) {
+  if (capCount >= CAP_MAX) return;
+  const o = capCount * CAP_F;
+  capStage[o] = ax; capStage[o + 1] = az; capStage[o + 2] = bx; capStage[o + 3] = bz;
+  capStage[o + 4] = r; capStage[o + 5] = w; capStage[o + 6] = pg; capStage[o + 7] = dry; capStage[o + 8] = pr;
+  capCount++;
+  const mnx = Math.min(ax, bx) - r, mxx = Math.max(ax, bx) + r, mnz = Math.min(az, bz) - r, mxz = Math.max(az, bz) + r;
+  if (!tickBox) tickBox = [mnx, mnz, mxx, mxz];
+  else { tickBox[0] = Math.min(tickBox[0], mnx); tickBox[1] = Math.min(tickBox[1], mnz); tickBox[2] = Math.max(tickBox[2], mxx); tickBox[3] = Math.max(tickBox[3], mxz); }
+}
+
+function concK() { return 1.4 + 17 * Math.pow(P.conc, 1.6); }
+
+function physStep(tx, tz, press, down, leanX = LEAN_NONE, leanZ = LEAN_NONE) {
+  const dt = DT, L = 3.2 * P.size, M = pose.M;
+  // --- brush pose: the hand
+  const w = 62;
+  pose.vx += (w * w * (tx - pose.x) - 2 * w * pose.vx) * dt; pose.x += pose.vx * dt;
+  pose.vz += (w * w * (tz - pose.z) - 2 * w * pose.vz) * dt; pose.z += pose.vz * dt;
+  const tilt = Math.hypot(pose.tlx, pose.tlz);
+  let yT = (down || press > 0.001) ? L * (1.02 - 0.84 * press) * Math.cos(tilt) : L + 2.6;
+  if (Math.abs(pose.x) < 22.5 && pose.z > -18.4 && pose.z < -13.2) yT = Math.max(yT, 2 * WEIGHT.hy + L * 0.95);
+  yT = Math.max(yT, 0.14 * L);
+  const wy = 40;
+  pose.vy += (wy * wy * (yT - pose.y) - 2 * wy * pose.vy) * dt; pose.y += pose.vy * dt;
+  pose.press = press;
+  // handle leans into the motion; an Apple Pencil's own tilt replaces the resting lean
+  const penLean = leanX !== LEAN_NONE;
+  const vk = penLean ? 0.002 : 0.0045;
+  let lx = pose.vx * vk, lz = pose.vz * vk;
+  const lm = Math.hypot(lx, lz); if (lm > 0.3) { lx *= 0.3 / lm; lz *= 0.3 / lm; }
+  const bx = penLean ? leanX : 0.09, bz = penLean ? leanZ : -0.05;
+  pose.tlx += (lx + bx - pose.tlx) * 0.04; pose.tlz += (lz + bz - pose.tlz) * 0.04;
+  setAxis(pose.tlx, pose.tlz);
+  computeRest();
+
+  // --- integrate
+  const damp = 0.975, g = -260 * dt * dt;
+  for (let i = 0; i < NB; i++) {
+    const o0 = i * NP * 3;
+    X[o0] = XP[o0] = WR[o0]; X[o0 + 1] = XP[o0 + 1] = WR[o0 + 1]; X[o0 + 2] = XP[o0 + 2] = WR[o0 + 2];
+    for (let j = 1; j < NP; j++) {
+      const o = o0 + j * 3;
+      const vx = (X[o] - XP[o]) * damp, vy = (X[o + 1] - XP[o + 1]) * damp, vz = (X[o + 2] - XP[o + 2]) * damp;
+      XP[o] = X[o]; XP[o + 1] = X[o + 1]; XP[o + 2] = X[o + 2];
+      X[o] += vx; X[o + 1] += vy + g; X[o + 2] += vz;
+    }
+  }
+  computeCentroids();
+  // --- constraints
+  const e = P.elastic;
+  for (let it = 0; it < 4; it++) {
+    for (let i = 0; i < NB; i++) {
+      const wet = smooth(INK[i], 0.08, 0.5), coh = 0.05 * wet;
+      for (let j = 1; j < NP; j++) {
+        const o = (i * NP + j) * 3, op = o - 3, t = j / (NP - 1);
+        // bend toward rest shape relative to the parent segment
+        const rx = REST[o] - REST[op], ry = REST[o + 1] - REST[op + 1], rz = REST[o + 2] - REST[op + 2];
+        const kb = (0.08 + 0.4 * e) * (1 - 0.5 * t) * (X[o + 1] < RAD + 0.01 ? 0.35 : 1);
+        X[o] += (X[op] + M[0] * rx + M[1] * ry + M[2] * rz - X[o]) * kb;
+        X[o + 1] += (X[op + 1] + M[3] * rx + M[4] * ry + M[5] * rz - X[o + 1]) * kb;
+        X[o + 2] += (X[op + 2] + M[6] * rx + M[7] * ry + M[8] * rz - X[o + 2]) * kb;
+        // weak global pull: guarantees full recovery, no permanent set
+        const kg = (0.004 + 0.028 * e) * (1 - 0.4 * t);
+        X[o] += (WR[o] - X[o]) * kg; X[o + 1] += (WR[o + 1] - X[o + 1]) * kg; X[o + 2] += (WR[o + 2] - X[o + 2]) * kg;
+        // ink cohesion: wet hairs gather into a point
+        const kc = coh * Math.pow(t, 1.3) * (X[o + 1] < RAD + 0.01 ? 0.25 : 1);
+        X[o] += (CEN[j * 3] - X[o]) * kc; X[o + 1] += (CEN[j * 3 + 1] - X[o + 1]) * kc; X[o + 2] += (CEN[j * 3 + 2] - X[o + 2]) * kc;
+        ftl(o, op, SEG[i * NP + j]);
+        collide(o, wet);
+      }
+    }
+  }
+  // --- friction & spread on paper
+  let ccx = 0, ccz = 0, ccn = 0;
+  for (let k = 0; k < NPT; k++) { if (k % NP && X[k * 3 + 1] <= RAD + 1e-4) { ccx += X[k * 3]; ccz += X[k * 3 + 2]; ccn++; } }
+  if (ccn) { ccx /= ccn; ccz /= ccn; }
+  for (let i = 0; i < NB; i++) {
+    const wet = smooth(INK[i], 0.08, 0.5), mu = 0.55 - 0.3 * wet;
+    // pressed hair flattens into a disc: each bristle keeps its place in the bundle
+    const ux = M[0] * BR.rx[i] + M[2] * BR.rz[i], uz = M[6] * BR.rx[i] + M[8] * BR.rz[i];
+    for (let j = 1; j < NP; j++) {
+      const o = (i * NP + j) * 3;
+      if (X[o + 1] > RAD + 1e-4) continue;
+      X[o] = XP[o] + (X[o] - XP[o]) * (1 - mu);
+      X[o + 2] = XP[o + 2] + (X[o + 2] - XP[o + 2]) * (1 - mu);
+      const pen = -WR[o + 1];
+      if (pen > 0) {
+        const Rt = L * (0.05 + 0.28 * press) * (1 - 0.25 * wet);
+        const g = Math.min(0.3, 0.1 + pen / L * 0.4);
+        X[o] += (ccx + ux * Rt - X[o]) * g; X[o + 2] += (ccz + uz * Rt - X[o + 2]) * g;
+      }
+    }
+    for (let j = 1; j < NP; j++) { const o = (i * NP + j) * 3; ftl(o, o - 3, SEG[i * NP + j]); collide(o, wet); }
+  }
+  // --- safety: velocity clamp, NaN / blow-up reset
+  let bad = false;
+  for (let k = 0; k < NPT; k++) {
+    const o = k * 3;
+    const dx = X[o] - XP[o], dy = X[o + 1] - XP[o + 1], dz = X[o + 2] - XP[o + 2];
+    const v = Math.hypot(dx, dy, dz);
+    if (!(v < 1e3)) { bad = true; break; }
+    if (v > 2.5) { const s = 2.5 / v; XP[o] = X[o] - dx * s; XP[o + 1] = X[o + 1] - dy * s; XP[o + 2] = X[o + 2] - dz * s; }
+    const rx = X[o] - pose.x, ry = X[o + 1] - pose.y, rz = X[o + 2] - pose.z;
+    if (rx * rx + ry * ry + rz * rz > 4 * L * L) { bad = true; break; }
+  }
+  if (bad) { X.set(WR); XP.set(WR); }
+
+  // --- contact → ink splats
+  const cK = concK(), size = P.size;
+  let touching = 0, tipX = 0, tipZ = 0;
+  for (let k = 0; k < NPT; k++) {
+    const o = k * 3;
+    CON[k] = (k % NP) > 0 && X[o + 1] <= RAD + 0.004 && Math.abs(X[o]) < 32 && Math.abs(X[o + 2]) < 18 ? 1 : 0;
+  }
+  const target = Math.min(1, brush.res * 1.35);
+  for (let i = 0; i < NB; i++) {
+    const ink = INK[i];
+    let nc = 0, wipe = 0;
+    for (let j = 1; j < NP; j++) {
+      const k = i * NP + j, o = k * 3;
+      if (!CON[k]) { LCF[k] = 0; continue; }
+      nc++;
+      const t = j / (NP - 1);
+      const spd = Math.hypot(X[o] - XP[o], X[o + 2] - XP[o + 2]) / dt;
+      const eff = ink / (1 + spd / 260);
+      const wf = smooth(eff, 0.1, 0.4);
+      const r = (0.035 + 0.03 * size) * (0.62 + 0.5 * (1 - t)) * (0.4 + 0.6 * wf);
+      // a fast hair wipes a longer strip per step: give each covered cell a comparable dose
+      const travel = LCF[k] ? Math.hypot(X[o] - LC[k * 2], X[o + 2] - LC[k * 2 + 1]) : 0;
+      const kT = Math.min(7, 1 + travel / (r * 1.1));
+      wipe += kT;
+      const water = 0.010 * eff * wf * kT;
+      const pig = water * cK;
+      // dry hairs skip and catch: slow per-hair flicker leaves broken flying-white streaks
+      const fl = Math.sin(i * 12.9898 + j * 4.1 + simStep * 0.021) * 0.5 + Math.sin(i * 7.31 + simStep * 0.057) * 0.5;
+      const dry = 0.024 * cK * (1 - wf) * smooth(ink, 0.015, 0.1) * kT * smooth(fl, -0.35 + 0.9 * (0.3 - ink), 0.15 + 0.9 * (0.3 - ink));
+      const pr = press * 0.1;
+      if (water + dry > 1e-6) {
+        if (LCF[k]) addCap(LC[k * 2], LC[k * 2 + 1], X[o], X[o + 2], r, water, pig, dry, pr);
+        else addCap(X[o], X[o + 2], X[o], X[o + 2], r, water, pig, dry, pr);
+        if (j < NP - 1 && CON[k + 1]) addCap(X[o], X[o + 2], X[o + 3], X[o + 5], r * 0.85, water * 0.5, pig * 0.5, dry * 0.5, pr);
+      }
+      LC[k * 2] = X[o]; LC[k * 2 + 1] = X[o + 2]; LCF[k] = 1;
+    }
+    if (nc) { touching++; INK[i] = Math.max(0, ink - wipe * 0.00042 * ink * (0.6 + 0.4 * press)); }
+    if (target > INK[i]) { const f = (target - INK[i]) * BR.refill[i] * dt * 4.0; INK[i] += f; brush.res = Math.max(0, brush.res - f * 0.012); }
+    const ot = (i * NP + NP - 1) * 3; tipX += X[ot]; tipZ += X[ot + 2];
+  }
+  tipX /= NB; tipZ /= NB;
+  const ts = Math.hypot(tipX - brush.tipX, tipZ - brush.tipZ) / dt;
+  brush.tipX = tipX; brush.tipZ = tipZ;
+  brush.tipSpeed += (Math.min(ts, 999) - brush.tipSpeed) * 0.02;
+  brush.touching = touching;
+  if (touching) { brush.idle = 0; if (!brush.inStroke) { brush.inStroke = true; brush.strokes++; } }
+  else if (++brush.idle > 30) brush.inStroke = false;
+}
+
+function dip() { brush.res = 1; INK.fill(1); }
+function inkLeft() { let s = 0; for (let i = 0; i < NB; i++) s += INK[i]; return (brush.res * 83 + s) / (83 + NB); }
+
+// ------------------------------------------------------------------ input shaping (live) + recording
+const REC_F = 6, LEAN_NONE = 9;   // step record: x, z, pressure, down, pen lean x, pen lean z
+const inp = { px: 8, pz: 4, down: false, pen: false, pressure: 0.5, hover: false, id: -1, type: '', leanX: LEAN_NONE, leanZ: LEAN_NONE,
+  q: [], seg: null, segK: 0, segN: 1, last: null };
+const sh = { tx: 8, tz: 4, press: 0, env: 0, dwell: 0, vx: 0, vz: 0, lpx: 8, lpz: 4, cvx: 0, cvz: 0, wasDown: false };
+const cur = new Float32Array(REC_F);
+function shapeLive() {
+  const dt = DT;
+  const pvx = (inp.px - sh.lpx) / dt, pvz = (inp.pz - sh.lpz) / dt;
+  sh.lpx = inp.px; sh.lpz = inp.pz;
+  sh.vx += (pvx - sh.vx) * 0.06; sh.vz += (pvz - sh.vz) * 0.06;
+  let down = 0;
+  if (inp.down) {
+    if (!sh.wasDown) { sh.env = 0; sh.dwell = 0; }
+    sh.env = Math.min(1, sh.env + dt / 0.12);
+    sh.tx = inp.px; sh.tz = inp.pz;
+    const spd = Math.hypot(sh.vx, sh.vz);
+    sh.dwell = spd < 3 ? Math.min(1, sh.dwell + dt / 1.4) : Math.max(0, sh.dwell - dt / 0.5);
+    const base = inp.pen ? penPressure(inp.pressure) : P.press;
+    const e = 1 - Math.pow(1 - sh.env, 3);
+    sh.press = clamp(base * e + (inp.pen ? 0 : 0.28 * sh.dwell * (1 - 0.6 * base)), 0, 1);
+    sh.cvx = sh.vx; sh.cvz = sh.vz; down = 1;
+  } else if (sh.press > 0) {
+    // lifting while the hand keeps moving: pointed tail
+    sh.press = Math.max(0, sh.press - dt / 0.11);
+    sh.tx += sh.cvx * dt; sh.tz += sh.cvz * dt; sh.cvx *= 0.985; sh.cvz *= 0.985;
+    down = sh.press > 0 ? 1 : 0;
+  } else if (inp.hover) {
+    sh.tx += (inp.px - sh.tx) * 0.25; sh.tz += (inp.pz - sh.tz) * 0.25;
+  }
+  sh.wasDown = inp.down;
+  cur[0] = sh.tx; cur[1] = sh.tz; cur[2] = sh.press; cur[3] = down;
+  cur[4] = inp.leanX; cur[5] = inp.leanZ;
+}
+// Apple Pencil reports ~0.02 on a feather touch, ~0.3 in normal writing and 1.0 only when pushed hard.
+// A soft-knee curve spreads that useful range over the brush; the 필압 slider sets the gain.
+function penPressure(p) {
+  const x = clamp((p - 0.02) / 0.9, 0, 1);
+  return clamp(Math.pow(x, 0.72) * (0.45 + 1.1 * P.press), 0, 1);
+}
+// pointer samples (coalesced) are replayed across this frame's physics steps so fast curves keep their shape
+function feedPointer() {
+  const seg = inp.seg;
+  if (!seg || seg.length < 2) return;
+  inp.segK++;
+  const u = Math.min(1, inp.segK / inp.segN) * (seg.length - 1);
+  const i = Math.min(seg.length - 2, Math.floor(u)), f = u - i, a = seg[i], b = seg[i + 1];
+  inp.px = a.x + (b.x - a.x) * f; inp.pz = a.z + (b.z - a.z) * f;
+  if (b.p >= 0) inp.pressure = a.p + (b.p - a.p) * f;
+  if (b.lx !== LEAN_NONE) { inp.leanX = b.lx; inp.leanZ = b.lz; }
+}
+function syncShaper() {
+  sh.tx = pose.x; sh.tz = pose.z; sh.press = 0; sh.vx = sh.vz = 0; sh.cvx = sh.cvz = 0;
+  sh.lpx = inp.px; sh.lpz = inp.pz; sh.wasDown = false;
+}
+
+const rec = {
+  d: new Float32Array(PHYS_HZ * 60 * REC_F), len: 0, events: [], snap: null,
+  push(a) {
+    if ((this.len + 1) * REC_F > this.d.length) { const n = new Float32Array(this.d.length * 2); n.set(this.d); this.d = n; }
+    this.d.set(a, this.len * REC_F); this.len++;
+  },
+  event(k, v) { if (!replay.active) this.events.push({ s: this.len, k, v }); },
+};
+function takeSnapshot() {
+  rec.snap = { X: X.slice(), XP: XP.slice(), INK: INK.slice(), LC: LC.slice(), LCF: LCF.slice(), res: brush.res, pose: { ...pose, M: pose.M.slice() }, P: { ...P } };
+  rec.len = 0; rec.events = [];
+}
+function restoreSnapshot() {
+  const s = rec.snap;
+  X.set(s.X); XP.set(s.XP); INK.set(s.INK); LC.set(s.LC); LCF.set(s.LCF); brush.res = s.res;
+  Object.assign(pose, s.pose); pose.M = s.pose.M.slice();
+  Object.assign(P, s.P);
+  brush.strokes = 0; brush.inStroke = false; brush.idle = 0; brush.touching = 0; brush.tipSpeed = 0;
+}
+
+const replay = { active: false, pos: 0, ev: 0, speed: 4, skip: true, onEnd: null };
+const demo = { active: false, steps: null, i: 0 };
+let simStep = 0, tickIndex = 0;
+
+function applyEvent(ev) {
+  switch (ev.k) {
+    case 'dip': dip(); break;
+    case 'preset': P.preset = ev.v; break;
+    default: P[ev.k] = ev.v;
+  }
+  uiDirty = true;
+}
+
+function doStep() {
+  if (replay.active) {
+    if (replay.pos >= rec.len) { finishReplay(); return false; }
+    while (replay.ev < rec.events.length && rec.events[replay.ev].s <= replay.pos) applyEvent(rec.events[replay.ev++]);
+    const o = replay.pos * REC_F;
+    physStep(rec.d[o], rec.d[o + 1], rec.d[o + 2], rec.d[o + 3] > 0.5, rec.d[o + 4], rec.d[o + 5]);
+    replay.pos++;
+  } else {
+    if (demo.active) {
+      const s = demo.steps[demo.i++];
+      cur[0] = s[0]; cur[1] = s[1]; cur[2] = s[2]; cur[3] = s[3]; cur[4] = cur[5] = LEAN_NONE;
+      if (demo.i >= demo.steps.length) { demo.active = false; syncShaper(); }
+    } else shapeLive();
+    rec.push(cur);
+    physStep(cur[0], cur[1], cur[2], cur[3] > 0.5, cur[4], cur[5]);
+  }
+  simStep++;
+  if (simStep % STEPS_PER_TICK === 0) closeTick();
+  return true;
+}
+function closeTick() {
+  frameTicks.push({ first: tickFirst, count: capCount - tickFirst });
+  tickFirst = capCount;
+  tickIndex++;
+  if (tickBox) {
+    const m = 4;
+    const x0 = Math.floor((tickBox[0] - m + 32) / 64 * SIM_W), x1 = Math.ceil((tickBox[2] + m + 32) / 64 * SIM_W);
+    const y0 = Math.floor((tickBox[1] - m + 18) / 36 * SIM_H), y1 = Math.ceil((tickBox[3] + m + 18) / 36 * SIM_H);
+    if (!act.valid) { act.valid = true; act.x0 = x0; act.y0 = y0; act.x1 = x1; act.y1 = y1; }
+    else { act.x0 = Math.min(act.x0, x0); act.y0 = Math.min(act.y0, y0); act.x1 = Math.max(act.x1, x1); act.y1 = Math.max(act.y1, y1); }
+    act.x0 = clamp(act.x0, 0, SIM_W); act.x1 = clamp(act.x1, 0, SIM_W); act.y0 = clamp(act.y0, 0, SIM_H); act.y1 = clamp(act.y1, 0, SIM_H);
+    act.lastSplatTick = tickIndex;
+    tickBox = null;
+  } else if (act.valid && tickIndex - act.lastSplatTick > 60 * 32) act.valid = false;
+}
+function isIdleAt(pos) {
+  if (pos >= rec.len) return false;
+  const o = pos * REC_F;
+  return rec.d[o + 2] <= 0 && rec.d[o + 3] < 0.5 && brush.touching === 0;
+}
+
+// ------------------------------------------------------------------ demo: ensō
+function makeDemo() {
+  const out = [];
+  const cx = -2.5, cz = 0.6, R = 9.4, a0 = 2.3, sweep = 5.95;
+  const sx = cx + R * Math.cos(a0), sz = cz + R * Math.sin(a0);
+  const fx = sx - 9, fz = sz + 5;
+  const ease = u => u * u * (3 - 2 * u);
+  for (let i = 0; i < 110; i++) { const u = ease(i / 109); out.push([fx + (sx - fx) * u, fz + (sz - fz) * u, 0, 0]); }
+  for (let i = 0; i < 36; i++) out.push([sx, sz, 0.82 * (1 - Math.pow(1 - i / 35, 3)), 1]);
+  const N = 620;
+  let lastA = a0, lastR = R;
+  for (let i = 0; i < N; i++) {
+    const u = i / (N - 1);
+    const prog = u - 0.07 * Math.sin(2 * Math.PI * u) / (2 * Math.PI) * 2;
+    const a = a0 + sweep * clamp(prog, 0, 1);
+    const r = R * (1 + 0.03 * Math.sin(3 * a + 0.6) + 0.025 * u);
+    let pr = u < 0.12 ? 0.82 - 0.2 * (u / 0.12) : 0.6 + 0.07 * Math.sin(u * 2 * Math.PI * 1.3);
+    if (u > 0.74) pr *= Math.max(0, 1 - (u - 0.74) / 0.26);
+    out.push([cx + r * Math.cos(a), cz + r * Math.sin(a), pr, pr > 0 ? 1 : 0]);
+    lastA = a; lastR = r;
+  }
+  // follow-through: the hand keeps travelling after the hair leaves the paper
+  let px = cx + lastR * Math.cos(lastA), pz = cz + lastR * Math.sin(lastA);
+  let vx = -Math.sin(lastA) * 22, vz = Math.cos(lastA) * 22;
+  for (let i = 0; i < 70; i++) { px += vx * DT; pz += vz * DT; vx *= 0.99; vz *= 0.99; out.push([px, pz, 0, 0]); }
+  const hx = px, hz = pz;
+  for (let i = 0; i < 90; i++) { const u = ease(i / 89); out.push([hx + 6 * u, hz + 3 * u, 0, 0]); }
+  return out;
+}
+
+// ------------------------------------------------------------------ WebGPU
+const canvas = $('#view');
+let device, ctx, fmt, ready = false;
+let paperSeed = 1;
+const G = {};
+
+function fail(reason) {
+  $('#nogpuReason').textContent = reason;
+  $('#nogpu').hidden = false;
+  setStatus('WEBGPU · 없음', 'off');
+  ready = false;
+}
+
+async function compile(code, label) {
+  const m = device.createShaderModule({ code, label });
+  const info = await m.getCompilationInfo();
+  const errs = info.messages.filter(x => x.type === 'error');
+  if (errs.length) {
+    console.error(label, errs.map(e => `${e.lineNum}:${e.linePos} ${e.message}`).join('\n'));
+    throw new Error(`셰이더 컴파일 실패 (${label}): ${errs[0].message}`);
+  }
+  return m;
+}
+
+async function initGPU() {
+  if (!('gpu' in navigator)) {
+    if (isAppleTouch) {
+      const m = navigator.userAgent.match(/Version\/(\d+)(?:\.(\d+))?/);
+      const v = m ? +m[1] : 0;
+      fail(v && v < 26
+        ? `이 iPad의 Safari ${m[1]}${m[2] ? '.' + m[2] : ''}에는 WebGPU가 없습니다. WebGPU는 iPadOS 26(Safari 26)부터 기본으로 켜집니다. 설정 › 일반 › 소프트웨어 업데이트에서 iPadOS 26 이상으로 올려 주세요.`
+        : 'Safari에서 WebGPU가 꺼져 있습니다. iPadOS 26 이상인데도 이 화면이 보이면 차단 모드(Lockdown Mode)가 켜져 있는지, 설정 › 앱 › Safari › 고급 › 기능 플래그에서 WebGPU가 꺼져 있지 않은지 확인해 주세요.');
+    } else fail('이 브라우저에는 navigator.gpu가 없습니다. WebGPU를 지원하지 않거나 꺼져 있습니다.');
+    return false;
+  }
+  let adapter = null;
+  try { adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' }); } catch (e) { /* handled below */ }
+  if (!adapter) { fail(isAppleTouch ? 'WebGPU 어댑터를 받지 못했습니다. 저전력 모드나 차단 모드를 끄고 Safari를 다시 열어 주세요.' : 'WebGPU 어댑터를 받지 못했습니다. GPU가 차단 목록에 있거나 하드웨어 가속이 꺼져 있을 수 있습니다.'); return false; }
+  try { device = await adapter.requestDevice(); } catch (e) { fail('GPU 장치를 만들지 못했습니다: ' + e.message); return false; }
+  device.lost.then(info => { if (info.reason !== 'destroyed') fail('GPU 장치 연결이 끊겼습니다: ' + (info.message || info.reason)); });
+  device.addEventListener('uncapturederror', e => console.error('[webgpu]', e.error.message));
+  ctx = canvas.getContext('webgpu');
+  fmt = navigator.gpu.getPreferredCanvasFormat();
+  ctx.configure({ device, format: fmt, alphaMode: 'opaque' });
+
+  const [mGen, mSim, mSplat, mScene] = await Promise.all([
+    compile(WGSL_GEN, 'paper-gen'), compile(WGSL_SIM, 'paper-sim'), compile(WGSL_SPLAT, 'splat'), compile(WGSL_SCENE, 'scene')]);
+
+  const TU = GPUTextureUsage, BU = GPUBufferUsage, SS = GPUShaderStage;
+  const tex = (format, usage, w = SIM_W, h = SIM_H) => device.createTexture({ size: [w, h], format, usage });
+  G.p1 = tex('rgba16float', TU.STORAGE_BINDING | TU.TEXTURE_BINDING);
+  G.p2 = tex('rgba16float', TU.STORAGE_BINDING | TU.TEXTURE_BINDING);
+  G.stA = tex('rgba32float', TU.STORAGE_BINDING | TU.TEXTURE_BINDING | TU.RENDER_ATTACHMENT);
+  G.stB = tex('rgba32float', TU.STORAGE_BINDING | TU.TEXTURE_BINDING | TU.RENDER_ATTACHMENT);
+  G.splat = tex('rgba16float', TU.TEXTURE_BINDING | TU.RENDER_ATTACHMENT);
+  G.splatView = G.splat.createView();   // export target is created on first 종이 떼어 보기 to save memory
+  G.stAView = G.stA.createView(); G.stBView = G.stB.createView();
+
+  const buf = (size, usage) => device.createBuffer({ size, usage });
+  G.capBuf = buf(CAP_MAX * CAP_F * 4, BU.STORAGE | BU.COPY_DST);
+  G.genU = buf(16, BU.UNIFORM | BU.COPY_DST);
+  G.simU0 = buf(64, BU.UNIFORM | BU.COPY_DST);
+  G.simU1 = buf(64, BU.UNIFORM | BU.COPY_DST);
+  G.frameU = buf(FRAME_FLOATS * 4, BU.UNIFORM | BU.COPY_DST);
+  G.objBrush = buf(80, BU.UNIFORM | BU.COPY_DST);
+  G.objWeight = buf(80, BU.UNIFORM | BU.COPY_DST);
+  G.bp = buf(NPT * 16, BU.STORAGE | BU.COPY_DST);
+  G.bu = buf(16, BU.UNIFORM | BU.COPY_DST);
+
+  const L = (entries) => device.createBindGroupLayout({ entries });
+  const genBGL = L([
+    { binding: 0, visibility: SS.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba16float' } },
+    { binding: 1, visibility: SS.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba16float' } },
+    { binding: 2, visibility: SS.COMPUTE, buffer: { type: 'uniform' } }]);
+  const simBGL = L([
+    { binding: 0, visibility: SS.COMPUTE, texture: { sampleType: 'unfilterable-float' } },
+    { binding: 1, visibility: SS.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba32float' } },
+    { binding: 2, visibility: SS.COMPUTE, texture: { sampleType: 'unfilterable-float' } },
+    { binding: 3, visibility: SS.COMPUTE, texture: { sampleType: 'unfilterable-float' } },
+    { binding: 4, visibility: SS.COMPUTE, texture: { sampleType: 'unfilterable-float' } },
+    { binding: 5, visibility: SS.COMPUTE, buffer: { type: 'uniform' } }]);
+  const splatBGL = L([{ binding: 0, visibility: SS.VERTEX | SS.FRAGMENT, buffer: { type: 'read-only-storage' } }]);
+  const VF = SS.VERTEX | SS.FRAGMENT;
+  const sceneBGL = L([
+    { binding: 0, visibility: VF, buffer: { type: 'uniform' } },
+    { binding: 1, visibility: VF, sampler: { type: 'filtering' } },
+    { binding: 2, visibility: VF, texture: { sampleType: 'float' } },
+    { binding: 3, visibility: VF, texture: { sampleType: 'float' } },
+    { binding: 4, visibility: VF, texture: { sampleType: 'unfilterable-float' } }]);
+  const objBGL = L([{ binding: 0, visibility: VF, buffer: { type: 'uniform' } }]);
+  const brBGL = L([
+    { binding: 0, visibility: VF, buffer: { type: 'read-only-storage' } },
+    { binding: 1, visibility: VF, buffer: { type: 'uniform' } }]);
+  const PL = (...bgls) => device.createPipelineLayout({ bindGroupLayouts: bgls });
+
+  G.genPipe = device.createComputePipeline({ layout: PL(genBGL), compute: { module: mGen, entryPoint: 'main' } });
+  G.simPipe = device.createComputePipeline({ layout: PL(simBGL), compute: { module: mSim, entryPoint: 'main' } });
+  const add = { srcFactor: 'one', dstFactor: 'one', operation: 'add' };
+  G.splatPipe = device.createRenderPipeline({
+    layout: PL(splatBGL),
+    vertex: { module: mSplat, entryPoint: 'vs' },
+    fragment: { module: mSplat, entryPoint: 'fs', targets: [{ format: 'rgba16float', blend: { color: add, alpha: add } }] },
+    primitive: { topology: 'triangle-list' } });
+  const ms = { count: MSAA };
+  const depthAlways = { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'always' };
+  const depthLess = { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less' };
+  G.envPipe = device.createRenderPipeline({
+    layout: PL(sceneBGL),
+    vertex: { module: mScene, entryPoint: 'vsFull' },
+    fragment: { module: mScene, entryPoint: 'fsEnv', targets: [{ format: fmt }] },
+    depthStencil: depthAlways, multisample: ms });
+  G.meshPipe = device.createRenderPipeline({
+    layout: PL(sceneBGL, objBGL),
+    vertex: { module: mScene, entryPoint: 'vsMesh', buffers: [{ arrayStride: 40, attributes: [
+      { shaderLocation: 0, offset: 0, format: 'float32x3' },
+      { shaderLocation: 1, offset: 12, format: 'float32x3' },
+      { shaderLocation: 2, offset: 24, format: 'float32x4' }] }] },
+    fragment: { module: mScene, entryPoint: 'fsMesh', targets: [{ format: fmt }] },
+    primitive: { topology: 'triangle-list', cullMode: 'none' },
+    depthStencil: depthLess, multisample: ms });
+  G.brPipe = device.createRenderPipeline({
+    layout: PL(sceneBGL, brBGL),
+    vertex: { module: mScene, entryPoint: 'vsBr' },
+    fragment: { module: mScene, entryPoint: 'fsBr', targets: [{ format: fmt }] },
+    primitive: { topology: 'triangle-list', cullMode: 'none' },
+    depthStencil: depthLess, multisample: ms });
+  const skDepth = { format: 'depth24plus', depthWriteEnabled: false, depthCompare: 'always' };
+  G.skLinePipe = device.createRenderPipeline({
+    layout: PL(sceneBGL, brBGL),
+    vertex: { module: mScene, entryPoint: 'vsSkLine' },
+    fragment: { module: mScene, entryPoint: 'fsSk', targets: [{ format: fmt }] },
+    primitive: { topology: 'line-list' }, depthStencil: skDepth, multisample: ms });
+  G.skDotPipe = device.createRenderPipeline({
+    layout: PL(sceneBGL, brBGL),
+    vertex: { module: mScene, entryPoint: 'vsSkDot' },
+    fragment: { module: mScene, entryPoint: 'fsSk', targets: [{ format: fmt }] },
+    primitive: { topology: 'triangle-list' }, depthStencil: skDepth, multisample: ms });
+  G.expPipe = device.createRenderPipeline({
+    layout: PL(sceneBGL),
+    vertex: { module: mScene, entryPoint: 'vsFull' },
+    fragment: { module: mScene, entryPoint: 'fsExport', targets: [{ format: 'rgba8unorm' }] },
+    primitive: { topology: 'triangle-list' } });
+
+  const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
+  const BG = (layout, res) => device.createBindGroup({ layout, entries: res.map((r, i) => ({ binding: i, resource: r })) });
+  const p1v = G.p1.createView(), p2v = G.p2.createView();
+  G.genBG = BG(genBGL, [p1v, p2v, { buffer: G.genU }]);
+  G.simAB1 = BG(simBGL, [G.stAView, G.stBView, p1v, p2v, G.splatView, { buffer: G.simU1 }]);
+  G.simAB0 = BG(simBGL, [G.stAView, G.stBView, p1v, p2v, G.splatView, { buffer: G.simU0 }]);
+  G.simBA0 = BG(simBGL, [G.stBView, G.stAView, p1v, p2v, G.splatView, { buffer: G.simU0 }]);
+  G.splatBG = BG(splatBGL, [{ buffer: G.capBuf }]);
+  G.sceneBG = BG(sceneBGL, [{ buffer: G.frameU }, sampler, p1v, p2v, G.stAView]);
+  G.objBrushBG = BG(objBGL, [{ buffer: G.objBrush }]);
+  G.objWeightBG = BG(objBGL, [{ buffer: G.objWeight }]);
+  G.brBG = BG(brBGL, [{ buffer: G.bp }, { buffer: G.bu }]);
+
+  // static geometry, built once
+  const bm = buildBrushMesh(), wm = buildWeightMesh();
+  const vb = (arr, usage) => { const b = device.createBuffer({ size: arr.byteLength, usage: usage | BU.COPY_DST }); device.queue.writeBuffer(b, 0, arr); return b; };
+  G.brushVB = vb(bm.v, BU.VERTEX); G.brushIB = vb(bm.i, BU.INDEX); G.brushN = bm.i.length;
+  G.weightVB = vb(wm.v, BU.VERTEX); G.weightIB = vb(wm.i, BU.INDEX); G.weightN = wm.i.length;
+  const wmodel = new Float32Array(20); wmodel.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0]);
+  device.queue.writeBuffer(G.objWeight, 0, wmodel);
+  return true;
+}
+
+function buildBrushMesh() {
+  // [y, r, material, normal radial, normal y]; bristle root at y = 0, handle towards +y
+  const prof = [
+    [0, 0, 0, 0, -1], [0, 0.50, 0, 0, -1],
+    [0, 0.50, 0, 1, -0.45], [0.25, 0.56, 0, 1, -0.2], [1.4, 0.60, 0, 1, -0.03], [2.66, 0.62, 0, 1, 0], [2.8, 0.60, 0, 0.6, 0.8], [2.8, 0.47, 0, 0, 1],
+    [2.8, 0.47, 1, 1, 0], [8.8, 0.466, 1, 1, 0], [8.95, 0.49, 1, 1, 0.1], [9.05, 0.49, 1, 1, -0.1], [9.2, 0.463, 1, 1, 0],
+    [16.0, 0.456, 1, 1, 0], [16.15, 0.48, 1, 1, 0.1], [16.25, 0.48, 1, 1, -0.1], [16.4, 0.453, 1, 1, 0], [21.0, 0.445, 1, 1, 0],
+    [21.0, 0.445, 2, 1, 0], [21.6, 0.45, 2, 1, 0.1], [21.9, 0.35, 2, 0.6, 0.8], [22.0, 0, 2, 0, 1]];
+  const seg = 32, v = [], idx = [];
+  for (const [y, r, m, nr, ny] of prof) {
+    const nl = Math.hypot(nr, ny) || 1;
+    for (let s = 0; s <= seg; s++) {
+      const a = s / seg * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a);
+      v.push(r * c, y, r * sn, nr * c / nl, ny / nl, nr * sn / nl, m, y, s / seg, 0);
+    }
+  }
+  for (let k = 0; k < prof.length - 1; k++) {
+    if (prof[k][2] !== prof[k + 1][2]) continue;
+    for (let s = 0; s < seg; s++) {
+      const a = k * (seg + 1) + s, b = a + seg + 1;
+      idx.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+  }
+  return { v: new Float32Array(v), i: new Uint32Array(idx) };
+}
+function buildWeightMesh() {
+  const { cx, cy, cz, hx, hy, hz } = WEIGHT, v = [], idx = [];
+  const faces = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 1, 0], [0, 0, -1]], [[0, 1, 0], [0, 0, 1], [1, 0, 0]],
+    [[0, -1, 0], [0, 0, -1], [1, 0, 0]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]];
+  const H = [hx, hy, hz];
+  for (const [n, u, w] of faces) {
+    const base = v.length / 10;
+    for (const [su, sw] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const lp = [0, 1, 2].map(k => (n[k] + u[k] * su + w[k] * sw) * H[k]);
+      v.push(cx + lp[0], cy + lp[1], cz + lp[2], n[0], n[1], n[2], 3, lp[0], lp[1], lp[2]);
+    }
+    idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+  return { v: new Float32Array(v), i: new Uint32Array(idx) };
+}
+
+function genPaper(seed) {
+  device.queue.writeBuffer(G.genU, 0, new Uint32Array([seed, 0, 0, 0]));
+  const enc = device.createCommandEncoder();
+  const cp = enc.beginComputePass();
+  cp.setPipeline(G.genPipe); cp.setBindGroup(0, G.genBG);
+  cp.dispatchWorkgroups(Math.ceil(SIM_W / 16), Math.ceil(SIM_H / 16));
+  cp.end();
+  device.queue.submit([enc.finish()]);
+}
+function clearState() {
+  const enc = device.createCommandEncoder();
+  for (const view of [G.stAView, G.stBView, G.splatView]) {
+    enc.beginRenderPass({ colorAttachments: [{ view, loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] }).end();
+  }
+  device.queue.submit([enc.finish()]);
+  splatDirty = false;
+  act.valid = false; tickBox = null; capCount = 0; tickFirst = 0; frameTicks.length = 0;
+}
+
+// ------------------------------------------------------------------ camera & layout
+const FRAME_FLOATS = 148;
+const frameData = new Float32Array(FRAME_FLOATS);
+const cam = { vp: null, ivp: null, eye: [0, 60, 60], fov: 0.5, pxAngle: 0.001 };
+let cssW = 1, cssH = 1, msaaTex = null, depthTex = null, msaaView = null, depthView = null;
+const STACK_MQ = '(max-width: 820px), (orientation: portrait) and (max-width: 1100px)';
+const isStacked = () => matchMedia(STACK_MQ).matches;
+// render resolution: 높게 3.2 MP, 보통 2.0 MP, 낮게 1.1 MP of canvas pixels. 자동 starts at 보통 on touch devices
+// and steps down when the GPU cannot keep a frame under ~22 ms.
+const RES_BUDGET = { high: 3.2e6, mid: 2.0e6, low: 1.1e6 };
+const resAuto = { level: 0, slow: 0 };
+function pixelBudget() {
+  if (ui.res !== 'auto') return RES_BUDGET[ui.res];
+  const steps = isAppleTouch || matchMedia('(pointer: coarse)').matches ? ['mid', 'low'] : ['high', 'mid', 'low'];
+  return RES_BUDGET[steps[Math.min(resAuto.level, steps.length - 1)]];
+}
+function watchPerf() {
+  if (ui.res !== 'auto' || !ready) return;
+  resAuto.slow = gpuMs > 22 ? resAuto.slow + 1 : Math.max(0, resAuto.slow - 1);
+  if (resAuto.slow > 90 && resAuto.level < 2) {
+    resAuto.level++; resAuto.slow = 0; layout();
+    toast('프레임을 지키려고 렌더 해상도를 낮췄습니다');
+  }
+}
+
+function layout() {
+  const r = canvas.getBoundingClientRect();
+  cssW = Math.max(1, r.width); cssH = Math.max(1, r.height);
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const budget = pixelBudget();
+  if (cssW * cssH * dpr * dpr > budget) dpr = Math.sqrt(budget / (cssW * cssH));
+  const w = Math.max(2, Math.round(cssW * dpr / 2) * 2), h = Math.max(2, Math.round(cssH * dpr / 2) * 2);   // even sizes keep H.264 recording happy
+  if (device && (canvas.width !== w || canvas.height !== h || !msaaTex)) {
+    canvas.width = w; canvas.height = h;
+    msaaTex?.destroy(); depthTex?.destroy();
+    msaaTex = device.createTexture({ size: [w, h], format: fmt, sampleCount: MSAA, usage: GPUTextureUsage.RENDER_ATTACHMENT });
+    depthTex = device.createTexture({ size: [w, h], format: 'depth24plus', sampleCount: MSAA, usage: GPUTextureUsage.RENDER_ATTACHMENT });
+    msaaView = msaaTex.createView(); depthView = depthTex.createView();
+  }
+  // target rectangle (css px, canvas space) the sheet should fill
+  let rect;
+  if (ui.wide) rect = [20, 20, cssW - 20, cssH - 20];
+  else if (isStacked()) rect = [12, 12, cssW - 12, cssH - 12];
+  else {
+    const tl = $('.tl').getBoundingClientRect(), bl = $('.bl').getBoundingClientRect(), rc = $('.rcol').getBoundingClientRect();
+    let t = tl.bottom + 10, b = bl.top - 10;
+    if (b - t < cssH * 0.5) { const m = (t + b) / 2; t = Math.min(t, m - cssH * 0.25); b = Math.max(b, m + cssH * 0.25); }
+    rect = [24, t, rc.left - 20, b];
+  }
+  fitCamera(rect);
+}
+function fitCamera(rect) {
+  const aspect = cssW / cssH, portrait = cssH > cssW * 1.05;
+  const yaw = portrait ? Math.PI / 2 : -0.12, el = portrait ? 1.1 : 0.93, fov = cam.fov;
+  const pts = [[-35.5, 0, -21.5], [35.5, 0, -21.5], [35.5, 0, 21.5], [-35.5, 0, 21.5], [-21, 1.9, -17.2], [21, 1.9, -17.2]];
+  const proj = persp(fov, aspect, 1, 900);
+  const rx0 = rect[0] / cssW * 2 - 1, rx1 = rect[2] / cssW * 2 - 1, ry0 = 1 - rect[3] / cssH * 2, ry1 = 1 - rect[1] / cssH * 2;
+  let dist = 90, V, VP, bb;
+  for (let it = 0; it < 6; it++) {
+    const eye = [dist * Math.cos(el) * Math.sin(yaw), dist * Math.sin(el), dist * Math.cos(el) * Math.cos(yaw)];
+    V = lookAt(eye, [0, 0, 0], [0, 1, 0]); VP = mul4(proj, V);
+    bb = [1e9, 1e9, -1e9, -1e9];
+    for (const p of pts) { const c = xf4(VP, p[0], p[1], p[2], 1); const x = c[0] / c[3], y = c[1] / c[3]; bb[0] = Math.min(bb[0], x); bb[1] = Math.min(bb[1], y); bb[2] = Math.max(bb[2], x); bb[3] = Math.max(bb[3], y); }
+    const s = Math.max((bb[2] - bb[0]) / (rx1 - rx0), (bb[3] - bb[1]) / (ry1 - ry0));
+    dist *= s;
+    cam.eye = eye;
+  }
+  const S = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, (rx0 + rx1) / 2 - (bb[0] + bb[2]) / 2, (ry0 + ry1) / 2 - (bb[1] + bb[3]) / 2, 0, 1]);
+  cam.vp = mul4(mul4(S, proj), V);
+  cam.ivp = inv4(cam.vp);
+  cam.pxAngle = 2 * Math.tan(fov / 2) / canvas.height;
+}
+function screenToPaper(cx, cy) {
+  const nx = cx / cssW * 2 - 1, ny = 1 - cy / cssH * 2;
+  const a = xf4(cam.ivp, nx, ny, 0, 1), b = xf4(cam.ivp, nx, ny, 1, 1);
+  const ax = a[0] / a[3], ay = a[1] / a[3], az = a[2] / a[3];
+  const dx = b[0] / b[3] - ax, dy = b[1] / b[3] - ay, dz = b[2] / b[3] - az;
+  if (dy >= -1e-6) return null;
+  const t = -ay / dy;
+  return [clamp(ax + dx * t, -36, 36), clamp(az + dz * t, -22, 22)];
+}
+
+// ------------------------------------------------------------------ per-frame GPU
+let splatDirty = false;
+const simData = new ArrayBuffer(64), simI = new Int32Array(simData), simF = new Float32Array(simData);
+const brData = new Float32Array(NPT * 4);
+const objData = new Float32Array(20);
+const buData = new Float32Array(4);
+
+function writeUniforms(time) {
+  const pr = PRESETS[P.preset], bl = P.bleed;
+  simI[0] = act.x0; simI[1] = act.y0; simI[2] = Math.max(0, act.x1 - act.x0); simI[3] = Math.max(0, act.y1 - act.y0);
+  simF[4] = (0.10 + 0.14 * bl) * pr.flow; simF[5] = 0.03 * (1.15 - bl) / Math.sqrt(pr.flow); simF[6] = 0.0032 * pr.absorb * (1.35 - 0.95 * bl); simF[7] = 0.02;
+  simF[8] = 0.00010; simF[9] = 0.00045; simF[10] = 2.2; simF[11] = 2.5;
+  simF[12] = 0.004; simF[13] = 0.3; simF[14] = 0; simF[15] = 1.0;
+  device.queue.writeBuffer(G.simU0, 0, simData);
+  simF[14] = 1;
+  device.queue.writeBuffer(G.simU1, 0, simData);
+
+  // brush-derived values
+  const M = pose.M, sR = 0.85 + 0.35 * P.size;
+  for (let k = 0; k < NPT; k++) {
+    brData[k * 4] = X[k * 3]; brData[k * 4 + 1] = X[k * 3 + 1]; brData[k * 4 + 2] = X[k * 3 + 2];
+    brData[k * 4 + 3] = INK[(k / NP) | 0];
+  }
+  device.queue.writeBuffer(G.bp, 0, brData);
+  buData[0] = (0.058 + 0.02 * P.size) * 0.55; buData[1] = 3; buData[2] = ui.skel ? 1 : 0;
+  device.queue.writeBuffer(G.bu, 0, buData);
+  objData.set([M[0], M[3], M[6], 0, M[1], M[4], M[7], 0, M[2], M[5], M[8], 0, pose.x, pose.y, pose.z, 1, sR, 0, 0, 0]);
+  device.queue.writeBuffer(G.objBrush, 0, objData);
+
+  // frame uniform
+  const f = frameData, L = norm3([-0.42, 1.0, 0.34]);
+  f.set(cam.vp, 0); f.set(cam.ivp, 16);
+  f.set([cam.eye[0], cam.eye[1], cam.eye[2], time], 32);
+  f.set([L[0], L[1], L[2], ui.grid ? 1 : 0], 36);
+  f.set([...pr.paper, pr.metal], 40);
+  f.set([...pr.inkLight, pr.k], 44);
+  f.set([...pr.inkDark, ui.skel ? 1 : 0], 48);
+  f.set([...pr.felt, 0], 52);
+  f.set(pr.grid, 56);
+  f.set([WEIGHT.cx, WEIGHT.cy, WEIGHT.cz, 0], 60);
+  f.set([WEIGHT.hx, WEIGHT.hy, WEIGHT.hz, 0.14], 64);
+  computeCentroids();
+  for (let j = 0; j < NP; j++) {
+    let s = 0;
+    for (let i = 0; i < NB; i++) { const o = (i * NP + j) * 3; s += (X[o] - CEN[j * 3]) ** 2 + (X[o + 2] - CEN[j * 3 + 2]) ** 2; }
+    SPR[j] = Math.sqrt(s / NB);
+  }
+  const ax = pose.ax, ay = pose.ay, az = pose.az, px = pose.x, py = pose.y, pz = pose.z;
+  const tipO = (NP - 1) * 3;
+  f.set([CEN[tipO], CEN[tipO + 1], CEN[tipO + 2], 0], 68);
+  f.set([px + ax * 22, py + ay * 22, pz + az * 22, 0], 72);
+  f.set([canvas.width, canvas.height, 0, 0], 76);
+  f.set([cam.pxAngle, time, 0, 0], 80);
+  const caps = [
+    [px + ax * 2.9, py + ay * 2.9, pz + az * 2.9, 0.46 * sR, px + ax * 21.8, py + ay * 21.8, pz + az * 21.8],
+    [px + ax * 0.15, py + ay * 0.15, pz + az * 0.15, 0.6 * sR, px + ax * 2.8, py + ay * 2.8, pz + az * 2.8]];
+  for (const [a, b] of [[0, 2], [2, 4], [4, 6], [6, 8], [8, 9]]) {
+    caps.push([CEN[a * 3], CEN[a * 3 + 1], CEN[a * 3 + 2], 0.8 * (SPR[a] + SPR[b]) * 0.5 + 0.03, CEN[b * 3], CEN[b * 3 + 1], CEN[b * 3 + 2]]);
+  }
+  for (let k = 0; k < 8; k++) {
+    const c = caps[k];
+    if (c) { f.set([c[0], c[1], c[2], c[3]], 84 + k * 8); f.set([c[4], c[5], c[6], 0], 88 + k * 8); }
+    else { f.set([0, -100, 0, 0], 84 + k * 8); f.set([0, -100, 0, 0], 88 + k * 8); }
+  }
+  device.queue.writeBuffer(G.frameU, 0, f);
+}
+
+function gpuFrame(time) {
+  writeUniforms(time);
+  const used = frameTicks.length ? frameTicks[frameTicks.length - 1].first + frameTicks[frameTicks.length - 1].count : 0;
+  if (used) device.queue.writeBuffer(G.capBuf, 0, capStage, 0, used * CAP_F);
+  const enc = device.createCommandEncoder();
+  const wx = Math.ceil(Math.max(0, act.x1 - act.x0) / 16), wy = Math.ceil(Math.max(0, act.y1 - act.y0) / 16);
+  for (const tk of frameTicks) {
+    if (tk.count > 0 || splatDirty) {
+      const rp = enc.beginRenderPass({ colorAttachments: [{ view: G.splatView, loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] });
+      if (tk.count > 0) { rp.setPipeline(G.splatPipe); rp.setBindGroup(0, G.splatBG); rp.draw(6, tk.count, 0, tk.first); }
+      rp.end();
+      splatDirty = tk.count > 0;
+    }
+    if (act.valid && wx > 0 && wy > 0) {
+      const cp = enc.beginComputePass();
+      cp.setPipeline(G.simPipe);
+      cp.setBindGroup(0, tk.count > 0 ? G.simAB1 : G.simAB0); cp.dispatchWorkgroups(wx, wy);
+      cp.setBindGroup(0, G.simBA0); cp.dispatchWorkgroups(wx, wy);
+      cp.end();
+    }
+  }
+  const rp = enc.beginRenderPass({
+    colorAttachments: [{ view: msaaView, resolveTarget: ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'discard', clearValue: [0.905, 0.902, 0.893, 1] }],
+    depthStencilAttachment: { view: depthView, depthLoadOp: 'clear', depthClearValue: 1, depthStoreOp: 'discard' } });
+  rp.setBindGroup(0, G.sceneBG);
+  rp.setPipeline(G.envPipe); rp.draw(3);
+  rp.setPipeline(G.meshPipe);
+  rp.setBindGroup(1, G.objWeightBG); rp.setVertexBuffer(0, G.weightVB); rp.setIndexBuffer(G.weightIB, 'uint32'); rp.drawIndexed(G.weightN);
+  rp.setBindGroup(1, G.objBrushBG); rp.setVertexBuffer(0, G.brushVB); rp.setIndexBuffer(G.brushIB, 'uint32'); rp.drawIndexed(G.brushN);
+  rp.setPipeline(G.brPipe); rp.setBindGroup(1, G.brBG); rp.draw((NP - 1) * 3 * 6, NB);
+  if (ui.skel) {
+    rp.setPipeline(G.skLinePipe); rp.draw(NB * (NP - 1) * 2);
+    rp.setPipeline(G.skDotPipe); rp.draw(6, NPT);
+  }
+  rp.end();
+  device.queue.submit([enc.finish()]);
+  inFlight++;
+  const t0 = performance.now(); lastSubmit = t0;
+  device.queue.onSubmittedWorkDone().then(() => { inFlight--; gpuMs += (performance.now() - t0 - gpuMs) * 0.1; });
+}
+let inFlight = 0, gpuMs = 0, lastSubmit = 0;
+
+// ------------------------------------------------------------------ main loop
+let paused = false, lastT = performance.now(), acc = 0, uiDirty = true, statsT = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!ready) return;
+  if (inFlight > 1 && now - lastSubmit < 400) return;   // GPU still busy: hold the frame instead of queueing latency
+  const dtR = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  // carry partial-tick capsules to the front of the staging buffer
+  const left = capCount - tickFirst;
+  if (tickFirst > 0 && left > 0) capStage.copyWithin(0, tickFirst * CAP_F, capCount * CAP_F);
+  capCount = left; tickFirst = 0; frameTicks.length = 0;
+
+  if (!paused) {
+    let rate = ui.slow ? 0.25 : 1;
+    if (replay.active) rate *= replay.speed;
+    acc += dtR * rate * PHYS_HZ;
+    let n = Math.floor(acc); acc -= n;
+    const maxN = replay.active ? 36 : 14;
+    if (n > maxN) { n = maxN; acc = 0; }
+    if (!replay.active && inp.q.length) {
+      const prev = inp.last || { x: inp.px, z: inp.pz, p: inp.pressure, lx: inp.leanX, lz: inp.leanZ };
+      inp.seg = [prev, ...inp.q]; inp.last = inp.q[inp.q.length - 1]; inp.q.length = 0;
+      inp.segK = 0; inp.segN = Math.max(1, n);
+    } else inp.seg = null;
+    let idleTicks = 0, guard = 0;
+    while (n > 0 && guard++ < 600) {
+      if (!replay.active && !demo.active) feedPointer();
+      if (replay.active && replay.skip && isIdleAt(replay.pos)) {
+        const t0 = tickIndex;
+        if (!doStep()) break;
+        if (tickIndex !== t0 && ++idleTicks >= 16) break;
+        continue;
+      }
+      if (!doStep()) break;          // a replay just ended: resume live input on the next frame
+      n--;
+    }
+  }
+  gpuFrame(now / 1000);
+  if (pendingEnd) { const f = pendingEnd; pendingEnd = null; f(); }
+  watchPerf();
+  if (now - statsT > 100) { statsT = now; updateStats(); }
+  if (uiDirty) { uiDirty = false; syncUI(); }
+  updateStatus();
+}
+
+// ------------------------------------------------------------------ replay control
+let pendingEnd = null;
+function startReplay(opts = {}) {
+  if (!rec.snap || rec.len === 0) { toast('아직 기록된 붓질이 없습니다'); return false; }
+  demo.active = false; inp.down = false;
+  if (replay.active) { replay.active = false; }
+  restoreSnapshot();
+  clearState();
+  simStep = 0;
+  replay.active = true; replay.pos = 0; replay.ev = 0;
+  replay.speed = opts.speed ?? ui.speed; replay.skip = opts.skip ?? ui.skip;
+  replay.onEnd = opts.onEnd || null;
+  paused = false; uiDirty = true;
+  return true;
+}
+function finishReplay() {
+  replay.active = false;
+  simStep = rec.len;
+  syncShaper(); uiDirty = true;
+  const cb = replay.onEnd; replay.onEnd = null;
+  if (cb) pendingEnd = cb;
+  else toast('다시 쓰기를 마쳤습니다. 이어서 쓸 수 있습니다');
+}
+function interruptReplay() {
+  rec.len = replay.pos;
+  rec.events = rec.events.filter(e => e.s < replay.pos);
+  replay.active = false;
+  simStep = rec.len;
+  const cb = replay.onEnd; replay.onEnd = null;
+  syncShaper(); uiDirty = true;
+  if (cb) pendingEnd = cb;
+  toast('이 자리에서 멈췄습니다. 이어서 쓰세요');
+}
+
+function newPaper() {
+  if (replay.active) { replay.active = false; replay.onEnd = null; }
+  demo.active = false;
+  paperSeed = (paperSeed * 16807 + 11) % 2147483647;
+  genPaper(paperSeed);
+  clearState();
+  brush.strokes = 0; brush.inStroke = false;
+  takeSnapshot();
+  simStep = 0;
+  syncShaper();
+}
+
+// ------------------------------------------------------------------ media recording
+const mr = { rec: null, chunks: [], t0: 0, mime: '', auto: false };
+function pickMime() {
+  const list = ['video/mp4;codecs=avc1.640033', 'video/mp4;codecs=avc1.4d002a', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  if (typeof MediaRecorder === 'undefined') return null;
+  return list.find(m => MediaRecorder.isTypeSupported(m)) || null;
+}
+function startRecording(auto = false) {
+  if (mr.rec) return false;
+  const mime = pickMime();
+  if (!mime || !canvas.captureStream) { toast(isAppleTouch ? '이 Safari는 캔버스 녹화를 지원하지 않습니다. 제어 센터의 화면 기록을 쓰세요' : '이 브라우저는 화면 녹화(MediaRecorder)를 지원하지 않습니다'); return false; }
+  const stream = canvas.captureStream(60);
+  let r;
+  try { r = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 14e6 }); }
+  catch (e) { toast('녹화를 시작하지 못했습니다: ' + e.message); return false; }
+  mr.rec = r; mr.chunks = []; mr.mime = mime; mr.t0 = performance.now(); mr.auto = auto;
+  r.ondataavailable = e => { if (e.data && e.data.size) mr.chunks.push(e.data); };
+  r.onstop = () => {
+    stream.getTracks().forEach(t => t.stop());
+    const type = mr.mime.split(';')[0];
+    const blob = new Blob(mr.chunks, { type });
+    const secs = (performance.now() - mr.t0) / 1000;
+    const ext = type === 'video/mp4' ? 'mp4' : 'webm';
+    mr.rec = null; uiDirty = true;
+    showVideo(blob, ext, secs, mr.auto);
+  };
+  r.start(250);
+  uiDirty = true;
+  return true;
+}
+function stopRecording() { if (mr.rec && mr.rec.state !== 'inactive') mr.rec.stop(); }
+function toggleRecording() { if (mr.rec) stopRecording(); else startRecording(false); }
+function timelapse() {
+  if (mr.rec) stopRecording();
+  if (!rec.snap || rec.len === 0) { toast('아직 기록된 붓질이 없습니다'); return; }
+  const ok = startReplay({ speed: 8, skip: true, onEnd: () => setTimeout(stopRecording, 350) });
+  if (ok) startRecording(true);
+}
+
+// ------------------------------------------------------------------ export (peel the sheet)
+let readBuf = null;
+async function peel() {
+  if (!ready) return;
+  toast('종이를 떼는 중…');
+  const bpr = EXP_W * 4;
+  if (!G.exp) { G.exp = device.createTexture({ size: [EXP_W, EXP_H], format: 'rgba8unorm', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC }); G.expView = G.exp.createView(); }
+  if (!readBuf) readBuf = device.createBuffer({ size: bpr * EXP_H, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+  const enc = device.createCommandEncoder();
+  const rp = enc.beginRenderPass({ colorAttachments: [{ view: G.expView, loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] });
+  rp.setPipeline(G.expPipe); rp.setBindGroup(0, G.sceneBG); rp.draw(3); rp.end();
+  enc.copyTextureToBuffer({ texture: G.exp }, { buffer: readBuf, bytesPerRow: bpr }, [EXP_W, EXP_H]);
+  device.queue.submit([enc.finish()]);
+  await readBuf.mapAsync(GPUMapMode.READ);
+  const px = new Uint8ClampedArray(readBuf.getMappedRange().slice(0));
+  readBuf.unmap();
+  const cv = document.createElement('canvas'); cv.width = EXP_W; cv.height = EXP_H;
+  const c2 = cv.getContext('2d');
+  c2.putImageData(new ImageData(px, EXP_W, EXP_H), 0, 0);
+  drawSeal(c2);
+  cv.toBlob(blob => { if (blob) showImage(blob); else toast('이미지를 만들지 못했습니다'); }, 'image/png');
+}
+function drawSeal(c2) {
+  const s = Math.round(2.5 / 64 * EXP_W);
+  const x = Math.round(EXP_W * 0.055), y = Math.round(EXP_H - EXP_H * 0.085 - s);
+  const sc = document.createElement('canvas'); sc.width = sc.height = s;
+  const g = sc.getContext('2d');
+  const rnd = mulberry(paperSeed + 7);
+  g.fillStyle = '#B22A1B';
+  g.beginPath();
+  const j = () => (rnd() - 0.5) * s * 0.025;
+  g.moveTo(j(), j()); g.lineTo(s + j(), j()); g.lineTo(s + j(), s + j()); g.lineTo(j(), s + j()); g.closePath(); g.fill();
+  g.globalCompositeOperation = 'destination-out';
+  g.lineWidth = s * 0.045; g.strokeStyle = '#000';
+  g.strokeRect(s * 0.07, s * 0.07, s * 0.86, s * 0.86);
+  g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `700 ${Math.round(s * 0.4)}px "Songti SC","STSong","Noto Serif KR","Noto Serif CJK KR","Batang",serif`;
+  g.fillText('墨', s * 0.5, s * 0.3);
+  g.fillText('戲', s * 0.5, s * 0.72);
+  for (let i = 0; i < 260; i++) { const r = rnd() * s * 0.012 + 0.5; g.beginPath(); g.arc(rnd() * s, rnd() * s, r, 0, 7); g.fill(); }
+  c2.save();
+  c2.globalCompositeOperation = PRESETS[P.preset].metal ? 'source-over' : 'multiply';
+  c2.globalAlpha = 0.92;
+  c2.translate(x + s / 2, y + s / 2); c2.rotate(-0.012); c2.drawImage(sc, -s / 2, -s / 2);
+  c2.restore();
+}
+
+// ------------------------------------------------------------------ modal, save, toast
+let modalBlob = null, modalName = '', modalURL = null;
+function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
+function freshURL(blob) {
+  if (modalURL) URL.revokeObjectURL(modalURL);
+  modalURL = URL.createObjectURL(blob);
+  return modalURL;
+}
+function openModal(title, node, blob, name, info) {
+  modalBlob = blob; modalName = name;
+  $('#mtitle').textContent = title;
+  $('#mbody').replaceChildren(node);
+  $('#minfo').textContent = info;
+  $('#modal').hidden = false;
+  $('#msave').focus();
+}
+function closeModal() {
+  $('#modal').hidden = true;
+  const v = $('#mbody video'); if (v) v.pause();
+  $('#mbody').replaceChildren();
+  if (modalURL) { URL.revokeObjectURL(modalURL); modalURL = null; }
+  canvas.focus();
+}
+function showImage(blob) {
+  const img = new Image(); img.src = freshURL(blob); img.alt = '위에서 본 종이와 낙관';
+  openModal('떼어 낸 종이', img, blob, `brush-ink-${stamp()}.png`, `PNG · ${EXP_W}×${EXP_H} · ${(blob.size / 1048576).toFixed(1)} MB · 낙관 墨戲`);
+}
+function showVideo(blob, ext, secs, auto) {
+  if (!blob.size) { toast(isAppleTouch ? '녹화된 프레임이 없습니다. 제어 센터의 화면 기록을 대신 쓰세요' : '녹화된 프레임이 없습니다'); return; }
+  const v = document.createElement('video');
+  v.src = freshURL(blob); v.controls = true; v.loop = true; v.muted = true; v.playsInline = true; v.autoplay = true;
+  openModal(auto ? '타임랩스 영상' : '녹화한 영상', v, blob, `brush-ink-${auto ? 'timelapse-' : ''}${stamp()}.${ext}`,
+    `${ext.toUpperCase()} · ${secs.toFixed(1)}초 · ${(blob.size / 1048576).toFixed(1)} MB${ext === 'webm' ? ' · 이 브라우저는 MP4 녹화를 지원하지 않아 WebM으로 저장합니다' : ''}`);
+}
+async function saveBlob(blob, filename) {
+  if (window.claude && typeof window.claude.use === 'function') {
+    let dl = null;
+    try { dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
+    if (dl) {
+      try { await dl.save({ filename, data: blob }); toast('저장했습니다'); }
+      catch (e) {
+        const code = e && e.code;
+        if (code === 'declined') toast('저장을 취소했습니다');
+        else if (code === 'rate_limited') toast('이미 저장 창이 열려 있습니다. 잠시 후 다시 시도하세요');
+        else toast('여기서는 저장할 수 없습니다 (' + (code || '오류') + ')');
+      }
+      return;
+    }
+  }
+  // iPad/iPhone Safari: the share sheet offers 사진에 저장 / 파일에 저장
+  if (isAppleTouch && navigator.canShare) {
+    const file = new File([blob], filename, { type: blob.type || (filename.endsWith('.png') ? 'image/png' : 'video/mp4') });
+    if (navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); toast('저장했습니다'); return; }
+      catch (e) { if (e && e.name === 'AbortError') { toast('저장을 취소했습니다'); return; } }
+    }
+  }
+  const a = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  toast(isAppleTouch ? '다운로드를 시작했습니다. 파일 앱의 다운로드 폴더를 확인하세요' : '저장했습니다');
+}
+let toastT = 0;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ------------------------------------------------------------------ UI
+let statusKey = '';
+function setStatus(text, kind = '') {
+  const key = text + kind; if (key === statusKey) return; statusKey = key;
+  $('#statusText').textContent = text;
+  $('#status').className = 'chip' + (kind ? ' ' + kind : '');
+}
+function updateStatus() {
+  if (!ready) return;
+  const parts = [];
+  if (mr.rec) { const s = Math.floor((performance.now() - mr.t0) / 1000); parts.push(`REC · ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`); }
+  if (replay.active) parts.push(`다시 쓰기 ${replay.speed}× · ${Math.floor(replay.pos / Math.max(1, rec.len) * 100)}%`);
+  if (paused) parts.push('PAUSED');
+  if (!parts.length) parts.push('WEBGPU · LIVE');
+  setStatus(parts.join(' · '), mr.rec ? 'rec' : paused ? 'warn' : '');
+}
+function updateStats() {
+  $('#stInk').innerHTML = `${Math.round(inkLeft() * 100)}<small>%</small>`;
+  $('#stPress').textContent = pose.press.toFixed(2);
+  $('#stSpeed').innerHTML = `${brush.tipSpeed.toFixed(1)}<small>cm/s</small>`;
+  $('#stTouch').innerHTML = `${brush.touching}<small>/ ${NB}</small>`;
+  $('#stStrokes').textContent = brush.strokes;
+}
+function concName(c) { return c < 0.3 ? '담묵' : c < 0.66 ? '중묵' : '농묵'; }
+const sliders = {
+  size: ['#sSize', '#vSize', v => `${(3.2 * v).toFixed(1)} cm`],
+  press: ['#sPress', '#vPress', v => v.toFixed(2)],
+  conc: ['#sConc', '#vConc', v => `${concName(v)} ${v.toFixed(2)}`],
+  bleed: ['#sBleed', '#vBleed', v => `${Math.round(v * 100)}%`],
+  elastic: ['#sElastic', '#vElastic', v => v.toFixed(2)],
+};
+function syncUI() {
+  for (const [k, [s, v, f]] of Object.entries(sliders)) { $(s).value = P[k]; $(v).textContent = f(P[k]); }
+  document.querySelectorAll('.preset').forEach((b, i) => b.setAttribute('aria-pressed', String(i === P.preset)));
+  document.querySelectorAll('#speedSeg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.s === ui.speed)));
+  $('#bPause').classList.toggle('on', paused);
+  $('#bPause').firstChild.textContent = paused ? '이어서 ' : '일시정지 ';
+  $('#bRec').classList.toggle('on', !!mr.rec);
+  $('#bRec').firstChild.textContent = mr.rec ? '녹화 멈추기 ' : '화면 녹화 ';
+  $('#bReplay').classList.toggle('on', replay.active);
+  $('#bReplay').textContent = replay.active ? '다시 쓰기 멈춤' : '다시 쓰기';
+}
+function buildPresets() {
+  const wrap = $('#presets');
+  PRESETS.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'preset'; b.setAttribute('aria-pressed', 'false');
+    const rgb = c => `rgb(${c.map(x => Math.round(x * 255)).join(',')})`;
+    b.innerHTML = `<span class="sw"><b style="background:${rgb(p.paper)}"></b><b style="background:${rgb(p.inkDark)}"></b></span>${p.name}<small>${String(i + 1).padStart(2, '0')}</small>`;
+    b.addEventListener('click', () => { P.preset = i; rec.event('preset', i); uiDirty = true; });
+    wrap.appendChild(b);
+  });
+}
+function bindUI() {
+  buildPresets();
+  for (const [k, [s]] of Object.entries(sliders)) {
+    $(s).addEventListener('input', e => { P[k] = +e.target.value; rec.event(k, P[k]); uiDirty = true; });
+  }
+  const doDip = () => { dip(); rec.event('dip', 1); toast('먹을 찍었습니다'); };
+  $('#bDip').addEventListener('click', doDip);
+  $('#bNew').addEventListener('click', () => { newPaper(); toast('새 종이를 폈습니다'); });
+  const togglePause = () => { paused = !paused; uiDirty = true; };
+  $('#bPause').addEventListener('click', togglePause);
+  $('#bPeel').addEventListener('click', peel);
+  $('#cSlow').addEventListener('change', e => { ui.slow = e.target.checked; });
+  $('#cGrid').addEventListener('change', e => { ui.grid = e.target.checked; });
+  $('#cSkel').addEventListener('change', e => { ui.skel = e.target.checked; });
+  $('#cSkip').addEventListener('change', e => { ui.skip = e.target.checked; replay.skip = ui.skip; });
+  $('#bRec').addEventListener('click', toggleRecording);
+  $('#bReplay').addEventListener('click', () => {
+    if (replay.active) { interruptReplay(); return; }
+    if (startReplay()) toast(`빈 종이부터 ${ui.speed}× 속도로 다시 씁니다. 종이를 누르면 멈춥니다`);
+  });
+  document.querySelectorAll('#speedSeg button').forEach(b => b.addEventListener('click', () => { ui.speed = +b.dataset.s; if (replay.active) replay.speed = ui.speed; uiDirty = true; }));
+  $('#bLapse').addEventListener('click', timelapse);
+  const toggleWide = () => { ui.wide = !ui.wide; document.body.classList.toggle('wide', ui.wide); requestAnimationFrame(layout); };
+  $('#bWide').addEventListener('click', toggleWide);
+  $('#exitWide').addEventListener('click', toggleWide);
+  $('#wideDip').addEventListener('click', doDip);
+  $('#mclose').addEventListener('click', closeModal);
+  $('#msave').addEventListener('click', () => { if (modalBlob) saveBlob(modalBlob, modalName); });
+  $('#modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+  window.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!$('#modal').hidden) { if (e.key === 'Escape') closeModal(); return; }
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' && e.target.type !== 'range' && e.target.type !== 'checkbox') return;
+    switch (e.key.toLowerCase()) {
+      case 'd': doDip(); break;
+      case 'n': newPaper(); toast('새 종이를 폈습니다'); break;
+      case 'p': togglePause(); break;
+      case 'r': toggleRecording(); break;
+      case 'f': toggleWide(); break;
+      case 'e': peel(); break;
+      case 'escape': if (ui.wide) toggleWide(); break;
+      default: return;
+    }
+    e.preventDefault();
+  });
+
+  // pointer: mouse, touch and Apple Pencil, with capture and palm rejection
+  const toPaper = (x, y) => { const r = canvas.getBoundingClientRect(); return screenToPaper(x - r.left, y - r.top); };
+  const pen = { down: false, until: 0, seen: false };
+  // Pencil tilt → lean of the brush handle, expressed in paper space
+  const leanOf = e => {
+    let tilt, ax, ay;
+    if (typeof e.altitudeAngle === 'number' && typeof e.azimuthAngle === 'number' && e.altitudeAngle > 0 && e.altitudeAngle < Math.PI / 2 - 1e-3) {
+      tilt = Math.PI / 2 - e.altitudeAngle; ax = Math.cos(e.azimuthAngle); ay = Math.sin(e.azimuthAngle);
+    } else if (e.tiltX || e.tiltY) {
+      const tx = Math.tan(e.tiltX * Math.PI / 180), ty = Math.tan(e.tiltY * Math.PI / 180);
+      const m = Math.hypot(tx, ty); if (m < 1e-4) return null;
+      tilt = Math.atan(m); ax = tx / m; ay = ty / m;
+    } else return null;
+    const a = toPaper(e.clientX, e.clientY), b = toPaper(e.clientX + ax * 40, e.clientY + ay * 40);
+    if (!a || !b) return null;
+    const dx = b[0] - a[0], dz = b[1] - a[1], dl = Math.hypot(dx, dz) || 1;
+    const k = Math.tan(Math.min(tilt * 0.6, 0.45));
+    return [dx / dl * k, dz / dl * k];
+  };
+  const sample = (e, q) => {
+    const ln = e.pointerType === 'pen' ? leanOf(e) : null;
+    return { x: q[0], z: q[1], p: e.pointerType === 'pen' ? (e.pressure || 0) : -1, lx: ln ? ln[0] : LEAN_NONE, lz: ln ? ln[1] : LEAN_NONE };
+  };
+  const fingerBlocked = () => !ui.finger || pen.down || performance.now() < pen.until;
+  canvas.addEventListener('pointerdown', e => {
+    if (!ready) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    if (e.pointerType === 'touch' && fingerBlocked()) return;           // palm or finger while the Pencil is in charge
+    if (inp.down && e.pointerId !== inp.id) {
+      if (e.pointerType !== 'pen' || inp.type !== 'touch') return;
+      inp.down = false;                                                   // Pencil takes over from a palm/finger stroke
+    }
+    if (e.pointerType === 'pen') {
+      pen.down = true;
+      if (!pen.seen) {
+        pen.seen = true;
+        if (ui.finger) { ui.finger = false; $('#cFinger').checked = false; toast('Apple Pencil을 감지해 손가락 쓰기를 껐습니다. 패널에서 다시 켤 수 있습니다'); }
+      }
+    }
+    canvas.focus({ preventScroll: true });
+    if (paused) { toast('일시정지 중입니다. 일시정지 버튼을 다시 누르면 이어집니다'); return; }
+    if (replay.active) interruptReplay();
+    if (demo.active) { demo.active = false; syncShaper(); }
+    const q = toPaper(e.clientX, e.clientY); if (!q) return;
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    const smp = sample(e, q);
+    inp.px = q[0]; inp.pz = q[1]; inp.id = e.pointerId; inp.down = true; inp.type = e.pointerType;
+    inp.pen = e.pointerType === 'pen'; inp.pressure = inp.pen ? Math.max(e.pressure || 0, 0.05) : 0.5;
+    inp.leanX = smp.lx; inp.leanZ = smp.lz;
+    inp.hover = e.pointerType !== 'touch';
+    inp.q.length = 0; inp.last = { x: q[0], z: q[1], p: inp.pressure, lx: smp.lx, lz: smp.lz }; inp.seg = null;
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!ready) return;
+    if (inp.down && e.pointerId !== inp.id) return;
+    if (!inp.down && e.pointerType === 'touch') return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
+    const list = evs && evs.length ? evs : [e];
+    for (const ce of list) {
+      const q = toPaper(ce.clientX, ce.clientY); if (!q) continue;
+      if (inp.down) inp.q.push(sample(ce, q));
+      else {
+        // hover (mouse, or Pencil hover on supported iPads): the brush and its shadow follow before touching
+        inp.px = q[0]; inp.pz = q[1]; inp.hover = true;
+        if (ce.pointerType === 'pen') { const ln = leanOf(ce); if (ln) { inp.leanX = ln[0]; inp.leanZ = ln[1]; } }
+        else { inp.leanX = inp.leanZ = LEAN_NONE; }
+      }
+    }
+  });
+  const up = e => {
+    if (e.pointerType === 'pen') { pen.down = false; pen.until = performance.now() + 600; }
+    if (e.pointerId !== inp.id) return;
+    // flush any samples not yet consumed so the stroke ends where the hand lifted
+    if (inp.q.length) { const l = inp.q[inp.q.length - 1]; inp.px = l.x; inp.pz = l.z; inp.q.length = 0; }
+    inp.down = false; inp.id = -1;
+    try { canvas.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+  };
+  canvas.addEventListener('pointerup', up);
+  canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('lostpointercapture', up);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  // Safari: stop long-press callout, double-tap zoom, pinch zoom and Scribble from reaching the sheet
+  const stop = e => { if (e.cancelable) e.preventDefault(); };
+  canvas.addEventListener('touchstart', stop, { passive: false });
+  canvas.addEventListener('touchmove', stop, { passive: false });
+  canvas.addEventListener('dblclick', stop);
+  for (const g of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(g, stop, { passive: false });
+  $('#cFinger').addEventListener('change', e => { ui.finger = e.target.checked; });
+  $('#selRes').addEventListener('change', e => { ui.res = e.target.value; resAuto.level = 0; layout(); });
+
+  new ResizeObserver(() => layout()).observe(canvas);
+  window.addEventListener('resize', layout);
+}
+
+// ------------------------------------------------------------------ boot
+async function boot() {
+  bindUI();
+  syncUI();
+  let ok = false;
+  try { ok = await initGPU(); } catch (e) { console.error(e); fail(e.message || String(e)); return; }
+  if (!ok) return;
+  layout();
+  genPaper(paperSeed = 1 + (Date.now() % 100000));
+  clearState();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce) {
+    demo.steps = makeDemo();
+    const s = demo.steps[0];
+    resetBrush(s[0], s[1]);
+    INK.fill(0.95); brush.res = 0.5;
+    inp.px = s[0]; inp.pz = s[1];
+    takeSnapshot();
+    demo.active = true; demo.i = 0;
+  } else {
+    resetBrush(8, 4); dip();
+    takeSnapshot();
+  }
+  syncShaper();
+  ready = true;
+  window.__brush = { P, ui, brush, rec, replay, pose, INK, X, CON, demo, get simStep() { return simStep; }, get gpuMs() { return gpuMs; }, frame: t => { inFlight = 0; frame(t); }, done: () => device.queue.onSubmittedWorkDone(), act, inp, startReplay, newPaper, peel, dip, physStep, doStep };
+  requestAnimationFrame(t => { lastT = t; frame(t); });
+}
+boot();
+</script>
+</body>
+</html>
