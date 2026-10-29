@@ -4,3 +4,11 @@
 !.env.example
 .vercel/
 node_modules/
+.venv/
+venv/
+__pycache__/
+.DS_Store
+.next/
+*.tsbuildinfo
+.omc/
+.claude/settings.local.json
